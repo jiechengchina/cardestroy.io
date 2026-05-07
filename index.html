@@ -128,6 +128,7 @@
     <p>
       Move: WASD / Arrow Keys<br>
       Use Weapon: SPACE<br>
+      Change Camera: C<br>
       Flamethrower: Hold SPACE, then release
     </p>
   </div>
@@ -140,7 +141,8 @@
   XP: <span id="xpText">0</span> / <span id="xpNeededText">5</span><br>
   Weapon: <span id="weaponText">Flamethrower</span><br>
   Charge: <span id="chargeText">0</span>s<br>
-  Enemies Left: <span id="enemyText">0</span>
+  Enemies Left: <span id="enemyText">0</span><br>
+  Camera: <span id="cameraText">Follow</span> — Press C
 </div>
 
 <div id="levelMessage">LEVEL UP!</div>
@@ -164,6 +166,7 @@ const xpNeededText = document.getElementById("xpNeededText");
 const weaponText = document.getElementById("weaponText");
 const chargeText = document.getElementById("chargeText");
 const enemyText = document.getElementById("enemyText");
+const cameraText = document.getElementById("cameraText");
 
 const homeLevelText = document.getElementById("homeLevelText");
 const homeXpText = document.getElementById("homeXpText");
@@ -202,6 +205,8 @@ let shieldActive = false;
 let shieldTime = 0;
 let shieldMesh = null;
 
+let cameraMode = 1;
+
 init3D();
 updateUI();
 animate();
@@ -217,10 +222,13 @@ function init3D() {
     1000
   );
 
+  camera.position.set(0, 10, 12);
+
   renderer = new THREE.WebGLRenderer({
     canvas,
     antialias: true
   });
+
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.shadowMap.enabled = true;
 
@@ -237,6 +245,7 @@ function init3D() {
     color: 0x2d3436,
     roughness: 0.9
   });
+
   const ground = new THREE.Mesh(groundGeometry, groundMaterial);
   ground.rotation.x = -Math.PI / 2;
   ground.receiveShadow = true;
@@ -251,6 +260,12 @@ function init3D() {
 
   window.addEventListener("keydown", e => {
     keys[e.key.toLowerCase()] = true;
+
+    if (e.key.toLowerCase() === "c" && gameState === "playing") {
+      cameraMode++;
+      if (cameraMode > 4) cameraMode = 1;
+      updateUI();
+    }
 
     if (e.code === "Space" && gameState === "playing") {
       e.preventDefault();
@@ -324,6 +339,13 @@ function createCar(color) {
   cabin.castShadow = true;
   group.add(cabin);
 
+  const front = new THREE.Mesh(
+    new THREE.BoxGeometry(1.2, 0.2, 0.25),
+    new THREE.MeshStandardMaterial({ color: 0xffffff })
+  );
+  front.position.set(0, 0.95, -2.05);
+  group.add(front);
+
   const wheelMaterial = new THREE.MeshStandardMaterial({ color: 0x050505 });
 
   const wheelPositions = [
@@ -365,6 +387,7 @@ function createWeaponBox(x, z) {
       roughness: 0.35
     })
   );
+
   box.castShadow = true;
   group.add(box);
 
@@ -401,6 +424,7 @@ function createTextSprite(text) {
   const material = new THREE.SpriteMaterial({ map: texture });
   const sprite = new THREE.Sprite(material);
   sprite.scale.set(5, 1.2, 1);
+
   return sprite;
 }
 
@@ -423,6 +447,7 @@ function startGame() {
   flameCharging = false;
   flameChargeSeconds = 0;
   spaceHeld = false;
+  cameraMode = 1;
 
   player = createCar(0x00bfff);
   player.position.set(0, 0, 0);
@@ -504,18 +529,14 @@ function movePlayer() {
     player.rotation.y -= 0.045;
   }
 
-  const forward = new THREE.Vector3(
-    -Math.sin(player.rotation.y),
-    0,
-    -Math.cos(player.rotation.y)
-  );
+  const forward = getForwardVector(player.rotation.y);
 
   if (keys["w"] || keys["arrowup"]) {
-    player.position.add(forward.multiplyScalar(playerSpeed));
+    player.position.add(forward.clone().multiplyScalar(playerSpeed));
   }
 
   if (keys["s"] || keys["arrowdown"]) {
-    player.position.add(forward.multiplyScalar(-playerSpeed * 0.65));
+    player.position.add(forward.clone().multiplyScalar(-playerSpeed * 0.65));
   }
 
   player.position.x = clamp(player.position.x, -42, 42);
@@ -525,15 +546,53 @@ function movePlayer() {
 function updateCamera() {
   if (!player) return;
 
-  const behind = new THREE.Vector3(
-    Math.sin(player.rotation.y) * 9,
-    6,
-    Math.cos(player.rotation.y) * 9
-  );
+  let targetPosition;
 
-  const targetPosition = player.position.clone().add(behind);
-  camera.position.lerp(targetPosition, 0.08);
-  camera.lookAt(player.position.x, player.position.y + 1.2, player.position.z);
+  if (cameraMode === 1) {
+    const behind = new THREE.Vector3(
+      Math.sin(player.rotation.y) * 9,
+      6,
+      Math.cos(player.rotation.y) * 9
+    );
+
+    targetPosition = player.position.clone().add(behind);
+    camera.position.lerp(targetPosition, 0.08);
+    camera.lookAt(player.position.x, player.position.y + 1.2, player.position.z);
+  }
+
+  if (cameraMode === 2) {
+    targetPosition = new THREE.Vector3(
+      player.position.x,
+      32,
+      player.position.z + 0.1
+    );
+
+    camera.position.lerp(targetPosition, 0.08);
+    camera.lookAt(player.position.x, player.position.y, player.position.z);
+  }
+
+  if (cameraMode === 3) {
+    const closeBehind = new THREE.Vector3(
+      Math.sin(player.rotation.y) * 5,
+      3.2,
+      Math.cos(player.rotation.y) * 5
+    );
+
+    targetPosition = player.position.clone().add(closeBehind);
+    camera.position.lerp(targetPosition, 0.12);
+    camera.lookAt(player.position.x, player.position.y + 1.1, player.position.z);
+  }
+
+  if (cameraMode === 4) {
+    targetPosition = new THREE.Vector3(
+      player.position.x + 13,
+      18,
+      player.position.z + 13
+    );
+
+    camera.position.lerp(targetPosition, 0.06);
+    camera.lookAt(player.position.x, player.position.y, player.position.z);
+  }
 }
 
 function useWeapon() {
@@ -685,7 +744,6 @@ function useFlamethrower() {
   flame.position.y = 1;
 
   scene.add(flame);
-
   flameEffects.push(flame);
 
   setTimeout(() => {
@@ -720,7 +778,9 @@ function consumeWeapon() {
 }
 
 function updateWeaponBoxes() {
-  weaponBoxes.forEach(box => {
+  for (let i = weaponBoxes.length - 1; i >= 0; i--) {
+    const box = weaponBoxes[i];
+
     box.rotation.y += box.userData.spin;
     box.position.y = 1.1 + Math.sin(performance.now() * 0.004 + box.position.x) * 0.25;
 
@@ -728,12 +788,12 @@ function updateWeaponBoxes() {
       currentWeapon = box.userData.type;
 
       scene.remove(box);
-      weaponBoxes = weaponBoxes.filter(b => b !== box);
+      weaponBoxes.splice(i, 1);
 
       createWeaponBox(randomBetween(-38, 38), randomBetween(-38, 38));
       updateUI();
     }
-  });
+  }
 }
 
 function updateEnemies() {
@@ -748,9 +808,9 @@ function updateEnemies() {
     const forward = getForwardVector(enemy.rotation.y);
 
     if (d > 12) {
-      enemy.position.add(forward.multiplyScalar(enemy.userData.speed));
+      enemy.position.add(forward.clone().multiplyScalar(enemy.userData.speed));
     } else if (d < 7) {
-      enemy.position.add(forward.multiplyScalar(-enemy.userData.speed));
+      enemy.position.add(forward.clone().multiplyScalar(-enemy.userData.speed));
     }
 
     enemy.position.x = clamp(enemy.position.x, -42, 42);
@@ -802,7 +862,7 @@ function updateProjectileArray(array, isEnemyBullet) {
     const item = array[i];
     const forward = getForwardVector(item.angle);
 
-    item.mesh.position.add(forward.multiplyScalar(item.speed));
+    item.mesh.position.add(forward.clone().multiplyScalar(item.speed));
 
     if (
       Math.abs(item.mesh.position.x) > 46 ||
@@ -978,6 +1038,11 @@ function updateUI() {
   weaponText.textContent = currentWeapon ? currentWeapon : "Empty - collect box";
   chargeText.textContent = flameCharging ? flameChargeSeconds.toFixed(1) : "0";
   enemyText.textContent = enemies.length;
+
+  if (cameraMode === 1) cameraText.textContent = "Follow";
+  if (cameraMode === 2) cameraText.textContent = "Top";
+  if (cameraMode === 3) cameraText.textContent = "Close";
+  if (cameraMode === 4) cameraText.textContent = "Arena";
 
   homeLevelText.textContent = currentLevel;
   homeXpText.textContent = xp;
