@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>CarDestroy.io</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: #111;
+      font-family: Arial, sans-serif;
+    }
+
+    canvas {
+      display: block;
+      background: #222;
+    }
+
+    #info {
+      position: fixed;
+      top: 15px;
+      left: 15px;
+      color: white;
+      font-size: 18px;
+      background: rgba(0,0,0,0.45);
+      padding: 12px 16px;
+      border-radius: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<div id="info">
+  <b>CarDestroy.io</b><br>
+  Move: WASD / Arrow Keys<br>
+  Use weapon: SPACE<br>
+  Weapon: <span id="weaponText">Rocket</span>
+</div>
+
+<canvas id="game"></canvas>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+const weaponText = document.getElementById("weaponText");
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+const keys = {};
+let bullets = [];
+let rockets = [];
+let mines = [];
+let enemies = [];
+
+const weapons = ["Rocket", "Mine", "Rifle", "Shield"];
+let currentWeapon = "Rocket";
+
+const player = {
+  x: canvas.width / 2,
+  y: canvas.height / 2,
+  angle: 0,
+  speed: 4,
+  width: 45,
+  height: 25,
+  health: 100,
+  shield: false,
+  shieldTime: 0
+};
+
+for (let i = 0; i < 5; i++) {
+  enemies.push({
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height,
+    width: 45,
+    height: 25,
+    health: 100,
+    angle: Math.random() * Math.PI * 2,
+    speed: 1.5
+  });
+}
+
+window.addEventListener("keydown", e => {
+  keys[e.key] = true;
+
+  if (e.code === "Space") {
+    useWeapon();
+  }
+});
+
+window.addEventListener("keyup", e => {
+  keys[e.key] = false;
+});
+
+function movePlayer() {
+  if (keys["a"] || keys["ArrowLeft"]) player.angle -= 0.06;
+  if (keys["d"] || keys["ArrowRight"]) player.angle += 0.06;
+
+  if (keys["w"] || keys["ArrowUp"]) {
+    player.x += Math.cos(player.angle) * player.speed;
+    player.y += Math.sin(player.angle) * player.speed;
+  }
+
+  if (keys["s"] || keys["ArrowDown"]) {
+    player.x -= Math.cos(player.angle) * player.speed * 0.7;
+    player.y -= Math.sin(player.angle) * player.speed * 0.7;
+  }
+
+  player.x = Math.max(20, Math.min(canvas.width - 20, player.x));
+  player.y = Math.max(20, Math.min(canvas.height - 20, player.y));
+}
+
+function useWeapon() {
+  if (!currentWeapon) return;
+
+  if (currentWeapon === "Rocket") {
+    for (let i = -1.5; i <= 1.5; i++) {
+      rockets.push({
+        x: player.x,
+        y: player.y,
+        angle: player.angle + i * 0.18,
+        speed: 7,
+        damage: 45
+      });
+    }
+  }
+
+  if (currentWeapon === "Mine") {
+    for (let i = 0; i < 4; i++) {
+      mines.push({
+        x: player.x - Math.cos(player.angle) * (45 + i * 20),
+        y: player.y - Math.sin(player.angle) * (45 + i * 20),
+        radius: 10,
+        damage: 50
+      });
+    }
+  }
+
+  if (currentWeapon === "Rifle") {
+    for (let i = -1.5; i <= 1.5; i++) {
+      bullets.push({
+        x: player.x,
+        y: player.y,
+        angle: player.angle + i * 0.04,
+        speed: 10,
+        damage: 20
+      });
+    }
+  }
+
+  if (currentWeapon === "Shield") {
+    player.shield = true;
+    player.shieldTime = 240;
+  }
+
+  currentWeapon = null;
+  weaponText.textContent = "Empty - find new weapon soon";
+
+  setTimeout(() => {
+    currentWeapon = weapons[Math.floor(Math.random() * weapons.length)];
+    weaponText.textContent = currentWeapon;
+  }, 2500);
+}
+
+function updateProjectiles() {
+  bullets.forEach(b => {
+    b.x += Math.cos(b.angle) * b.speed;
+    b.y += Math.sin(b.angle) * b.speed;
+  });
+
+  rockets.forEach(r => {
+    r.x += Math.cos(r.angle) * r.speed;
+    r.y += Math.sin(r.angle) * r.speed;
+  });
+
+  bullets = bullets.filter(b => b.x > 0 && b.x < canvas.width && b.y > 0 && b.y < canvas.height);
+  rockets = rockets.filter(r => r.x > 0 && r.x < canvas.width && r.y > 0 && r.y < canvas.height);
+}
+
+function updateEnemies() {
+  enemies.forEach(enemy => {
+    enemy.angle += (Math.random() - 0.5) * 0.05;
+    enemy.x += Math.cos(enemy.angle) * enemy.speed;
+    enemy.y += Math.sin(enemy.angle) * enemy.speed;
+
+    if (enemy.x < 20 || enemy.x > canvas.width - 20) enemy.angle += Math.PI;
+    if (enemy.y < 20 || enemy.y > canvas.height - 20) enemy.angle += Math.PI;
+  });
+}
+
+function checkHits() {
+  enemies.forEach(enemy => {
+    bullets.forEach(b => {
+      if (distance(b.x, b.y, enemy.x, enemy.y) < 25) {
+        enemy.health -= b.damage;
+        b.x = -999;
+      }
+    });
+
+    rockets.forEach(r => {
+      if (distance(r.x, r.y, enemy.x, enemy.y) < 30) {
+        enemy.health -= r.damage;
+        r.x = -999;
+      }
+    });
+
+    mines.forEach(m => {
+      if (distance(m.x, m.y, enemy.x, enemy.y) < 30) {
+        enemy.health -= m.damage;
+        m.x = -999;
+      }
+    });
+  });
+
+  enemies = enemies.filter(e => e.health > 0);
+  mines = mines.filter(m => m.x > 0);
+}
+
+function distance(x1, y1, x2, y2) {
+  return Math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2);
+}
+
+function drawCar(car, color) {
+  ctx.save();
+  ctx.translate(car.x, car.y);
+  ctx.rotate(car.angle);
+
+  ctx.fillStyle = color;
+  ctx.fillRect(-car.width / 2, -car.height / 2, car.width, car.height);
+
+  ctx.fillStyle = "black";
+  ctx.fillRect(5, -8, 15, 16);
+
+  ctx.restore();
+
+  ctx.fillStyle = "red";
+  ctx.fillRect(car.x - 25, car.y - 35, 50, 6);
+
+  ctx.fillStyle = "lime";
+  ctx.fillRect(car.x - 25, car.y - 35, Math.max(0, car.health / 2), 6);
+}
+
+function drawShield() {
+  if (!player.shield) return;
+
+  ctx.save();
+  ctx.translate(player.x, player.y);
+  ctx.rotate(player.angle);
+
+  ctx.strokeStyle = "rgba(100, 220, 255, 0.9)";
+  ctx.lineWidth = 6;
+  ctx.beginPath();
+  ctx.arc(0, 0, 45, -Math.PI / 2, Math.PI / 2);
+  ctx.stroke();
+
+  ctx.restore();
+
+  player.shieldTime--;
+  if (player.shieldTime <= 0) {
+    player.shield = false;
+  }
+}
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  drawCar(player, "#00bfff");
+  drawShield();
+
+  enemies.forEach(enemy => drawCar(enemy, "orange"));
+
+  ctx.fillStyle = "yellow";
+  bullets.forEach(b => {
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, 4, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  ctx.fillStyle = "red";
+  rockets.forEach(r => {
+    ctx.beginPath();
+    ctx.arc(r.x, r.y, 8, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  ctx.fillStyle = "black";
+  mines.forEach(m => {
+    ctx.beginPath();
+    ctx.arc(m.x, m.y, m.radius, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  ctx.fillStyle = "white";
+  ctx.font = "28px Arial";
+  ctx.fillText("Enemies left: " + enemies.length, canvas.width - 220, 40);
+}
+
+function gameLoop() {
+  movePlayer();
+  updateProjectiles();
+  updateEnemies();
+  checkHits();
+  draw();
+  requestAnimationFrame(gameLoop);
+}
+
+gameLoop();
+</script>
+
+</body>
+</html>
