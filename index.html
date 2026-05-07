@@ -87,6 +87,8 @@
       padding: 8px;
       font-weight: bold;
       margin-bottom: 8px;
+      font-size: 18px;
+      text-align: center;
     }
 
     .orangeBtn,
@@ -213,12 +215,15 @@
       color: #e8f8ff;
     }
 
-    #customPanel select {
+    #customPanel select,
+    #customPanel input {
       width: 100%;
-      padding: 7px;
+      padding: 10px;
       border-radius: 8px;
       border: none;
       margin-top: 4px;
+      box-sizing: border-box;
+      font-size: 16px;
     }
 
     #bottomBar {
@@ -308,8 +313,8 @@
     </div>
 
     <div class="profileBox">
-      <div class="playerName">Player</div>
-      <button class="orangeBtn">Customize</button>
+      <div class="playerName" id="playerNameText">Player</div>
+      <button class="orangeBtn" id="applyCustomizeBtn">Customize</button>
       <button class="blueBtn">Garage</button>
     </div>
 
@@ -344,6 +349,9 @@
 
   <div id="customPanel">
     <h3>Customize</h3>
+
+    <label>Player Name</label>
+    <input type="text" id="playerNameInput" placeholder="Enter your name" value="Player">
 
     <label>Character</label>
     <select id="characterSelect">
@@ -404,6 +412,7 @@
 
 <div id="hud">
   <b>CarDestroy.io 3D</b><br>
+  Player: <span id="hudPlayerName">Player</span><br>
   Health: <span id="healthText">100</span><br>
   Current Level: <span id="levelText">1</span><br>
   XP: <span id="xpText">0</span> / <span id="xpNeededText">5</span><br>
@@ -437,6 +446,7 @@ const enemyText = document.getElementById("enemyText");
 const cameraText = document.getElementById("cameraText");
 const characterText = document.getElementById("characterText");
 const cameraButton = document.getElementById("cameraButton");
+const hudPlayerName = document.getElementById("hudPlayerName");
 
 const homeLevelText = document.getElementById("homeLevelText");
 const homeXpText = document.getElementById("homeXpText");
@@ -447,6 +457,10 @@ const homeArenaText = document.getElementById("homeArenaText");
 const partsText = document.getElementById("partsText");
 const coinsText = document.getElementById("coinsText");
 const gemsText = document.getElementById("gemsText");
+
+const playerNameText = document.getElementById("playerNameText");
+const playerNameInput = document.getElementById("playerNameInput");
+const applyCustomizeBtn = document.getElementById("applyCustomizeBtn");
 
 const characterSelect = document.getElementById("characterSelect");
 const carColorSelect = document.getElementById("carColorSelect");
@@ -472,6 +486,8 @@ let currentLevel = 1;
 let xp = 0;
 let xpNeeded = 5;
 
+let playerDisplayName = "Player";
+
 let parts = 0;
 let coins = 0;
 let gems = 0;
@@ -495,6 +511,30 @@ updateUI();
 animate();
 
 cameraButton.addEventListener("click", changeCameraMode);
+applyCustomizeBtn.addEventListener("click", applyCustomization);
+
+function applyCustomization() {
+  const newName = playerNameInput.value.trim();
+
+  if (newName !== "") {
+    playerDisplayName = newName;
+  } else {
+    playerDisplayName = "Player";
+    playerNameInput.value = "Player";
+  }
+
+  scene.background = new THREE.Color(backgroundColorSelect.value);
+
+  message.textContent = "Customization saved!";
+
+  setTimeout(() => {
+    if (gameState === "home") {
+      message.textContent = "";
+    }
+  }, 1200);
+
+  updateUI();
+}
 
 function init3D() {
   scene = new THREE.Scene();
@@ -800,7 +840,6 @@ function startGame() {
   scene.background = new THREE.Color(backgroundColorSelect.value);
 
   gameState = "playing";
-  homeScreen.style.display = "block";
   homeScreen.style.display = "none";
   hud.style.display = "block";
   message.textContent = "";
@@ -1377,6 +1416,9 @@ function updateUI() {
     characterSelect.value.charAt(0).toUpperCase() + characterSelect.value.slice(1);
 
   characterText.textContent = characterName;
+
+  playerNameText.textContent = playerDisplayName;
+  hudPlayerName.textContent = playerDisplayName;
 
   homeLevelText.textContent = currentLevel;
   homeXpText.textContent = xp;
