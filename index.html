@@ -92,7 +92,8 @@
     }
 
     .orangeBtn,
-    .blueBtn {
+    .blueBtn,
+    .redBtn {
       width: 100%;
       margin-top: 8px;
       font-size: 18px;
@@ -110,6 +111,10 @@
 
     .blueBtn {
       background: linear-gradient(#69c9ff, #1685df);
+    }
+
+    .redBtn {
+      background: linear-gradient(#ff6666, #cc0000);
     }
 
     .newsBox h3 {
@@ -316,6 +321,7 @@
       <div class="playerName" id="playerNameText">Player</div>
       <button class="orangeBtn" id="applyCustomizeBtn">Customize</button>
       <button class="blueBtn">Garage</button>
+      <button class="redBtn" onclick="resetProgress()">Reset Save</button>
     </div>
 
     <div class="newsBox">
@@ -507,11 +513,100 @@ let shieldMesh = null;
 let cameraMode = 1;
 
 init3D();
+loadProgress();
 updateUI();
 animate();
 
 cameraButton.addEventListener("click", changeCameraMode);
 applyCustomizeBtn.addEventListener("click", applyCustomization);
+
+function saveProgress() {
+  const saveData = {
+    playerDisplayName,
+    currentLevel,
+    xp,
+    xpNeeded,
+    parts,
+    coins,
+    gems,
+    character: characterSelect.value,
+    carColor: carColorSelect.value,
+    wheelColor: wheelColorSelect.value,
+    hatColor: hatColorSelect.value,
+    backgroundColor: backgroundColorSelect.value
+  };
+
+  localStorage.setItem("carDestroySaveData", JSON.stringify(saveData));
+}
+
+function loadProgress() {
+  const saved = localStorage.getItem("carDestroySaveData");
+
+  if (!saved) return;
+
+  try {
+    const saveData = JSON.parse(saved);
+
+    playerDisplayName = saveData.playerDisplayName || "Player";
+    currentLevel = saveData.currentLevel || 1;
+    xp = saveData.xp || 0;
+    xpNeeded = saveData.xpNeeded || 5;
+    parts = saveData.parts || 0;
+    coins = saveData.coins || 0;
+    gems = saveData.gems || 0;
+
+    characterSelect.value = saveData.character || "driver";
+    carColorSelect.value = saveData.carColor || "#00bfff";
+    wheelColorSelect.value = saveData.wheelColor || "#050505";
+    hatColorSelect.value = saveData.hatColor || "#ff3333";
+    backgroundColorSelect.value = saveData.backgroundColor || "#141820";
+
+    playerNameInput.value = playerDisplayName;
+    playerNameText.textContent = playerDisplayName;
+
+    if (scene) {
+      scene.background = new THREE.Color(backgroundColorSelect.value);
+    }
+  } catch (error) {
+    console.log("Save file was broken, resetting save.");
+    localStorage.removeItem("carDestroySaveData");
+  }
+}
+
+function resetProgress() {
+  localStorage.removeItem("carDestroySaveData");
+
+  playerDisplayName = "Player";
+  currentLevel = 1;
+  xp = 0;
+  xpNeeded = 5;
+  parts = 0;
+  coins = 0;
+  gems = 0;
+
+  characterSelect.value = "driver";
+  carColorSelect.value = "#00bfff";
+  wheelColorSelect.value = "#050505";
+  hatColorSelect.value = "#ff3333";
+  backgroundColorSelect.value = "#141820";
+  playerNameInput.value = "Player";
+
+  if (scene) {
+    scene.background = new THREE.Color(backgroundColorSelect.value);
+  }
+
+  message.textContent = "Save reset!";
+
+  setTimeout(() => {
+    if (gameState === "home") {
+      message.textContent = "";
+    }
+  }, 1200);
+
+  updateUI();
+}
+
+window.resetProgress = resetProgress;
 
 function applyCustomization() {
   const newName = playerNameInput.value.trim();
@@ -533,6 +628,7 @@ function applyCustomization() {
     }
   }, 1200);
 
+  saveProgress();
   updateUI();
 }
 
@@ -1375,6 +1471,7 @@ function gainXP(amount) {
     coins += 25;
     parts += 5;
     showLevelUp();
+    saveProgress();
   }
 }
 
@@ -1392,6 +1489,7 @@ function returnHome(text) {
   homeScreen.style.display = "block";
   hud.style.display = "none";
   message.textContent = text;
+  saveProgress();
   updateUI();
 }
 
