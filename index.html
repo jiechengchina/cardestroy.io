@@ -57,7 +57,7 @@
       background: rgba(0,0,0,0.45);
       padding: 40px;
       border-radius: 20px;
-      width: 540px;
+      width: 560px;
       box-shadow: 0 0 30px rgba(0,0,0,0.5);
     }
 
@@ -125,7 +125,8 @@
 
     <p>
       Move: WASD / Arrow Keys<br>
-      Use weapon: SPACE
+      Use weapon: SPACE<br>
+      Flamethrower: Hold SPACE, then release
     </p>
   </div>
 </div>
@@ -138,6 +139,7 @@
   Current Level: <span id="levelText">1</span><br>
   XP: <span id="xpText">0</span> / <span id="xpNeededText">5</span><br>
   Weapon: <span id="weaponText">Rocket</span><br>
+  Charge: <span id="chargeText">0</span>s<br>
   Enemies left: <span id="enemyText">0</span>
 </div>
 
@@ -157,6 +159,7 @@ const levelText = document.getElementById("levelText");
 const xpText = document.getElementById("xpText");
 const xpNeededText = document.getElementById("xpNeededText");
 const weaponText = document.getElementById("weaponText");
+const chargeText = document.getElementById("chargeText");
 const enemyText = document.getElementById("enemyText");
 
 const homeLevelText = document.getElementById("homeLevelText");
@@ -173,6 +176,7 @@ let rockets = [];
 let mines = [];
 let enemyBullets = [];
 let enemies = [];
+let flameBlasts = [];
 
 let gameState = "home";
 
@@ -182,8 +186,13 @@ let xpNeeded = 5;
 
 let weaponDamageBoost = 1;
 
-const weapons = ["Rocket", "Mine", "Rifle", "Shield"];
+const weapons = ["Rocket", "Mine", "Flamethrower", "Shield", "Rifle"];
 let currentWeapon = "Rocket";
+
+let spaceHeld = false;
+let flameCharging = false;
+let flameChargeStart = 0;
+let flameChargeSeconds = 0;
 
 const player = {
   x: canvas.width / 2,
@@ -209,8 +218,12 @@ function startGame() {
   mines = [];
   enemyBullets = [];
   enemies = [];
+  flameBlasts = [];
 
   currentWeapon = "Rocket";
+  spaceHeld = false;
+  flameCharging = false;
+  flameChargeSeconds = 0;
 
   player.x = canvas.width / 2;
   player.y = canvas.height / 2;
@@ -258,12 +271,30 @@ window.addEventListener("keydown", e => {
 
   if (e.code === "Space" && gameState === "playing") {
     e.preventDefault();
-    useWeapon();
+
+    if (spaceHeld) return;
+    spaceHeld = true;
+
+    if (currentWeapon === "Flamethrower") {
+      flameCharging = true;
+      flameChargeStart = performance.now();
+      flameChargeSeconds = 0;
+    } else {
+      useWeapon();
+    }
   }
 });
 
 window.addEventListener("keyup", e => {
   keys[e.key] = false;
+
+  if (e.code === "Space") {
+    spaceHeld = false;
+
+    if (gameState === "playing" && currentWeapon === "Flamethrower" && flameCharging) {
+      useFlamethrower();
+    }
+  }
 });
 
 function movePlayer() {
@@ -311,12 +342,14 @@ function useWeapon() {
   }
 
   if (currentWeapon === "Rifle") {
+    const aimAngle = getNearestEnemyAngle();
+
     for (let i = -1.5; i <= 1.5; i++) {
       bullets.push({
         x: player.x,
         y: player.y,
-        angle: player.angle + i * 0.04,
-        speed: 10,
+        angle: aimAngle + i * 0.04,
+        speed: 11,
         damage: 20 * weaponDamageBoost
       });
     }
@@ -327,6 +360,41 @@ function useWeapon() {
     player.shieldTime = 240;
   }
 
+  consumeWeapon();
+}
+
+function useFlamethrower() {
+  if (!currentWeapon || currentWeapon !== "Flamethrower") return;
+
+  flameCharging = false;
+
+  const holdTime = Math.min(5, (performance.now() - flameChargeStart) / 1000);
+  flameChargeSeconds = 0;
+
+  const range = 80 + holdTime * 70;
+  const width = 35 + holdTime * 10;
+  const damage = (30 + holdTime * 12) * weaponDamageBoost;
+
+  flameBlasts.push({
+    x: player.x,
+    y: player.y,
+    angle: player.angle,
+    range: range,
+    width: width,
+    damage: damage,
+    life: 18
+  });
+
+  enemies.forEach(enemy => {
+    if (enemyInsideFlame(enemy, player.x, player.y, player.angle, range, width)) {
+      enemy.health -= damage;
+    }
+  });
+
+  consumeWeapon();
+}
+
+function consumeWeapon() {
   currentWeapon = null;
   weaponText.textContent = "Empty";
 
@@ -336,6 +404,39 @@ function useWeapon() {
       updateUI();
     }
   }, 2500);
+}
+
+function getNearestEnemyAngle() {
+  if (enemies.length === 0) return player.angle;
+
+  let nearest = enemies[0];
+  let nearestDistance = distance(player.x, player.y, nearest.x, nearest.y);
+
+  enemies.forEach(enemy => {
+    const d = distance(player.x, player.y, enemy.x, enemy.y);
+    if (d < nearestDistance) {
+      nearest = enemy;
+      nearestDistance = d;
+    }
+  });
+
+  return Math.atan2(nearest.y - player.y, nearest.x - player.x);
+}
+
+function enemyInsideFlame(enemy, x, y, angle, range, width) {
+  const dx = enemy.x - x;
+  const dy = enemy.y - y;
+
+  const forward = dx * Math.cos(angle) + dy * Math.sin(angle);
+  const side = Math.abs(-dx * Math.sin(angle) + dy * Math.cos(angle));
+
+  return forward > 0 && forward < range && side < width;
+}
+
+function updateFlameCharge() {
+  if (flameCharging) {
+    flameChargeSeconds = Math.min(5, (performance.now() - flameChargeStart) / 1000);
+  }
 }
 
 function updateProjectiles() {
@@ -354,9 +455,12 @@ function updateProjectiles() {
     b.y += Math.sin(b.angle) * b.speed;
   });
 
+  flameBlasts.forEach(f => f.life--);
+
   bullets = bullets.filter(b => b.x > 0 && b.x < canvas.width && b.y > 0 && b.y < canvas.height);
   rockets = rockets.filter(r => r.x > 0 && r.x < canvas.width && r.y > 0 && r.y < canvas.height);
   enemyBullets = enemyBullets.filter(b => b.x > 0 && b.x < canvas.width && b.y > 0 && b.y < canvas.height);
+  flameBlasts = flameBlasts.filter(f => f.life > 0);
 }
 
 function updateEnemies() {
@@ -467,7 +571,6 @@ function gainXP(amount) {
   while (xp >= xpNeeded) {
     xp -= xpNeeded;
     currentLevel++;
-
     showLevelUp();
   }
 }
@@ -487,6 +590,7 @@ function updateUI() {
   xpText.textContent = xp;
   xpNeededText.textContent = xpNeeded;
   weaponText.textContent = currentWeapon ? currentWeapon : "Empty";
+  chargeText.textContent = flameCharging ? flameChargeSeconds.toFixed(1) : "0";
   enemyText.textContent = enemies.length;
 
   homeLevelText.textContent = currentLevel;
@@ -542,10 +646,61 @@ function drawShield() {
   }
 }
 
+function drawFlameBlasts() {
+  flameBlasts.forEach(f => {
+    ctx.save();
+    ctx.translate(f.x, f.y);
+    ctx.rotate(f.angle);
+
+    ctx.fillStyle = "rgba(255, 120, 0, 0.35)";
+    ctx.beginPath();
+    ctx.moveTo(20, 0);
+    ctx.lineTo(f.range, -f.width);
+    ctx.lineTo(f.range, f.width);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = "rgba(255, 220, 0, 0.45)";
+    ctx.beginPath();
+    ctx.moveTo(20, 0);
+    ctx.lineTo(f.range * 0.8, -f.width * 0.5);
+    ctx.lineTo(f.range * 0.8, f.width * 0.5);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.restore();
+  });
+}
+
+function drawChargePreview() {
+  if (!flameCharging) return;
+
+  const range = 80 + flameChargeSeconds * 70;
+  const width = 35 + flameChargeSeconds * 10;
+
+  ctx.save();
+  ctx.translate(player.x, player.y);
+  ctx.rotate(player.angle);
+
+  ctx.strokeStyle = "rgba(255, 160, 0, 0.7)";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(20, 0);
+  ctx.lineTo(range, -width);
+  ctx.lineTo(range, width);
+  ctx.closePath();
+  ctx.stroke();
+
+  ctx.restore();
+}
+
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   if (gameState !== "playing") return;
+
+  drawFlameBlasts();
+  drawChargePreview();
 
   drawCar(player, "#00bfff");
   drawShield();
@@ -585,6 +740,7 @@ function draw() {
 
 function gameLoop() {
   if (gameState === "playing") {
+    updateFlameCharge();
     movePlayer();
     updateProjectiles();
     updateEnemies();
