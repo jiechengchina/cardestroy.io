@@ -138,7 +138,7 @@
   Health: <span id="healthText">100</span><br>
   Current Level: <span id="levelText">1</span><br>
   XP: <span id="xpText">0</span> / <span id="xpNeededText">5</span><br>
-  Weapon: <span id="weaponText">Rocket</span><br>
+  Weapon: <span id="weaponText">Flamethrower</span><br>
   Charge: <span id="chargeText">0</span>s<br>
   Enemies left: <span id="enemyText">0</span>
 </div>
@@ -187,7 +187,7 @@ let xpNeeded = 5;
 let weaponDamageBoost = 1;
 
 const weapons = ["Rocket", "Mine", "Flamethrower", "Shield", "Rifle"];
-let currentWeapon = "Rocket";
+let currentWeapon = "Flamethrower";
 
 let spaceHeld = false;
 let flameCharging = false;
@@ -220,7 +220,7 @@ function startGame() {
   enemies = [];
   flameBlasts = [];
 
-  currentWeapon = "Rocket";
+  currentWeapon = "Flamethrower";
   spaceHeld = false;
   flameCharging = false;
   flameChargeSeconds = 0;
