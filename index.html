@@ -302,9 +302,9 @@
 
   <div id="leftPanel">
     <div class="currencyBox">
-      <div>📦 Parts: <b>999</b></div>
-      <div>🪙 Coins: <b>999999</b></div>
-      <div>💎 Gems: <b>999999</b></div>
+      <div>📦 Parts: <b><span id="partsText">0</span></b></div>
+      <div>🪙 Coins: <b><span id="coinsText">0</span></b></div>
+      <div>💎 Gems: <b><span id="gemsText">0</span></b></div>
     </div>
 
     <div class="profileBox">
@@ -444,6 +444,10 @@ const homeXpNeededText = document.getElementById("homeXpNeededText");
 const homeModeText = document.getElementById("homeModeText");
 const homeArenaText = document.getElementById("homeArenaText");
 
+const partsText = document.getElementById("partsText");
+const coinsText = document.getElementById("coinsText");
+const gemsText = document.getElementById("gemsText");
+
 const characterSelect = document.getElementById("characterSelect");
 const carColorSelect = document.getElementById("carColorSelect");
 const wheelColorSelect = document.getElementById("wheelColorSelect");
@@ -467,6 +471,10 @@ let keys = {};
 let currentLevel = 1;
 let xp = 0;
 let xpNeeded = 5;
+
+let parts = 0;
+let coins = 0;
+let gems = 0;
 
 let currentWeapon = "Flamethrower";
 const weapons = ["Rocket", "Mine", "Flamethrower", "Shield", "Rifle"];
@@ -792,6 +800,7 @@ function startGame() {
   scene.background = new THREE.Color(backgroundColorSelect.value);
 
   gameState = "playing";
+  homeScreen.style.display = "block";
   homeScreen.style.display = "none";
   hud.style.display = "block";
   message.textContent = "";
@@ -1324,6 +1333,8 @@ function gainXP(amount) {
   while (xp >= xpNeeded) {
     xp -= xpNeeded;
     currentLevel++;
+    coins += 25;
+    parts += 5;
     showLevelUp();
   }
 }
@@ -1352,6 +1363,10 @@ function updateUI() {
   xpNeededText.textContent = xpNeeded;
   weaponText.textContent = currentWeapon ? currentWeapon : "Empty - collect box";
   enemyText.textContent = enemies.length;
+
+  partsText.textContent = parts;
+  coinsText.textContent = coins;
+  gemsText.textContent = gems;
 
   if (cameraMode === 1) cameraText.textContent = "Smash View";
   if (cameraMode === 2) cameraText.textContent = "Top View";
