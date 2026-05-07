@@ -82,13 +82,21 @@
     }
 
     .playerName {
+      width: 100%;
       background: #2aa7ff;
       border-radius: 9px;
-      padding: 8px;
+      padding: 10px;
       font-weight: bold;
       margin-bottom: 8px;
       font-size: 18px;
       text-align: center;
+      color: white;
+      border: none;
+      box-sizing: border-box;
+    }
+
+    .playerName::placeholder {
+      color: white;
     }
 
     .orangeBtn,
@@ -160,6 +168,38 @@
       display: inline-block;
       margin-bottom: 20px;
       line-height: 1.5;
+      position: relative;
+    }
+
+    .arenaToggle {
+      background: rgba(255,255,255,0.2);
+      color: white;
+      border: 2px solid #8be0ff;
+      border-radius: 10px;
+      padding: 5px 12px;
+      font-size: 20px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    #arenaMenu {
+      display: none;
+      margin-top: 10px;
+      background: rgba(0, 139, 255, 0.95);
+      border: 3px solid #8be0ff;
+      border-radius: 14px;
+      overflow: hidden;
+    }
+
+    .arenaOption {
+      padding: 10px 18px;
+      cursor: pointer;
+      font-size: 19px;
+      font-weight: bold;
+    }
+
+    .arenaOption:hover {
+      background: rgba(255,255,255,0.25);
     }
 
     #bigPlayButton {
@@ -222,8 +262,7 @@
       color: #e8f8ff;
     }
 
-    #customPanel select,
-    #customPanel input {
+    #customPanel select {
       width: 100%;
       padding: 10px;
       border-radius: 8px;
@@ -320,7 +359,7 @@
     </div>
 
     <div class="profileBox">
-      <div class="playerName" id="playerNameText">Player</div>
+      <input class="playerName" id="playerNameInput" value="Player" maxlength="16">
       <button class="orangeBtn" id="openCustomizeBtn">Customize</button>
       <button class="blueBtn">Garage</button>
       <button class="redBtn" onclick="resetProgress()">Reset Save</button>
@@ -342,7 +381,17 @@
     <div id="homeStats">
       XP: <span id="homeXpText">0</span> / <span id="homeXpNeededText">5</span><br>
       Mode: <span id="homeModeText">Solo Battle</span><br>
-      Arena: <span id="homeArenaText">Junkyard</span>
+      Arena:
+      <button id="arenaToggleBtn" class="arenaToggle">
+        <span id="homeArenaText">Junkyard</span> ^
+      </button>
+
+      <div id="arenaMenu">
+        <div class="arenaOption" data-arena="Junkyard">Junkyard</div>
+        <div class="arenaOption" data-arena="Desert">Desert</div>
+        <div class="arenaOption" data-arena="Factory">Factory</div>
+        <div class="arenaOption" data-arena="Parking Garage">Parking Garage</div>
+      </div>
     </div>
 
     <button id="bigPlayButton" onclick="startGame()">▶ PLAY</button>
@@ -357,9 +406,6 @@
 
   <div id="customPanel">
     <h3>Customize</h3>
-
-    <label>Player Name</label>
-    <input type="text" id="playerNameInput" placeholder="Enter your name" value="Player">
 
     <label>Character</label>
     <select id="characterSelect">
@@ -431,6 +477,7 @@
   Enemies Left: <span id="enemyText">0</span><br>
   Camera: <span id="cameraText">Smash View</span><br>
   Character: <span id="characterText">Driver</span><br>
+  Arena: <span id="hudArenaText">Junkyard</span><br>
   <button id="cameraButton">Change Camera</button>
 </div>
 
@@ -456,6 +503,7 @@ const weaponText = document.getElementById("weaponText");
 const enemyText = document.getElementById("enemyText");
 const cameraText = document.getElementById("cameraText");
 const characterText = document.getElementById("characterText");
+const hudArenaText = document.getElementById("hudArenaText");
 const cameraButton = document.getElementById("cameraButton");
 const hudPlayerName = document.getElementById("hudPlayerName");
 
@@ -465,11 +513,14 @@ const homeXpNeededText = document.getElementById("homeXpNeededText");
 const homeModeText = document.getElementById("homeModeText");
 const homeArenaText = document.getElementById("homeArenaText");
 
+const arenaToggleBtn = document.getElementById("arenaToggleBtn");
+const arenaMenu = document.getElementById("arenaMenu");
+const arenaOptions = document.querySelectorAll(".arenaOption");
+
 const partsText = document.getElementById("partsText");
 const coinsText = document.getElementById("coinsText");
 const gemsText = document.getElementById("gemsText");
 
-const playerNameText = document.getElementById("playerNameText");
 const playerNameInput = document.getElementById("playerNameInput");
 
 const customPanel = document.getElementById("customPanel");
@@ -493,6 +544,7 @@ let mines = [];
 let enemyBullets = [];
 let weaponBoxes = [];
 let fireParticles = [];
+let arenaObjects = [];
 
 let gameState = "home";
 let keys = {};
@@ -502,6 +554,7 @@ let xp = 0;
 let xpNeeded = 5;
 
 let playerDisplayName = "Player";
+let selectedArena = "Junkyard";
 
 let parts = 0;
 let coins = 0;
@@ -511,7 +564,6 @@ let currentWeapon = "Flamethrower";
 const weapons = ["Rocket", "Mine", "Flamethrower", "Shield", "Rifle"];
 
 let playerHealth = 100;
-let playerMaxHealth = 100;
 let playerSpeed = 0.16;
 let weaponDamageBoost = 1;
 
@@ -523,14 +575,42 @@ let cameraMode = 1;
 
 init3D();
 loadProgress();
+createSelectedArena();
 updateUI();
 animate();
 
 cameraButton.addEventListener("click", changeCameraMode);
 
+playerNameInput.addEventListener("input", () => {
+  const newName = playerNameInput.value.trim();
+
+  if (newName !== "") {
+    playerDisplayName = newName;
+  } else {
+    playerDisplayName = "Player";
+  }
+
+  saveProgress();
+  updateUI();
+});
+
+arenaToggleBtn.addEventListener("click", () => {
+  arenaMenu.style.display = arenaMenu.style.display === "block" ? "none" : "block";
+});
+
+arenaOptions.forEach(option => {
+  option.addEventListener("click", () => {
+    selectedArena = option.dataset.arena;
+    arenaMenu.style.display = "none";
+    createSelectedArena();
+    saveProgress();
+    updateUI();
+  });
+});
+
 openCustomizeBtn.addEventListener("click", () => {
   customPanel.style.display = "block";
-  message.textContent = "Choose your character, colors, and name.";
+  message.textContent = "Choose your character and colors.";
 });
 
 closeCustomizeBtn.addEventListener("click", () => {
@@ -543,6 +623,7 @@ applyCustomizeBtn.addEventListener("click", applyCustomization);
 function saveProgress() {
   const saveData = {
     playerDisplayName,
+    selectedArena,
     currentLevel,
     xp,
     xpNeeded,
@@ -568,6 +649,7 @@ function loadProgress() {
     const saveData = JSON.parse(saved);
 
     playerDisplayName = saveData.playerDisplayName || "Player";
+    selectedArena = saveData.selectedArena || "Junkyard";
     currentLevel = saveData.currentLevel || 1;
     xp = saveData.xp || 0;
     xpNeeded = saveData.xpNeeded || 5;
@@ -582,13 +664,11 @@ function loadProgress() {
     backgroundColorSelect.value = saveData.backgroundColor || "#141820";
 
     playerNameInput.value = playerDisplayName;
-    playerNameText.textContent = playerDisplayName;
 
     if (scene) {
       scene.background = new THREE.Color(backgroundColorSelect.value);
     }
   } catch (error) {
-    console.log("Save file was broken, resetting save.");
     localStorage.removeItem("carDestroySaveData");
   }
 }
@@ -597,6 +677,7 @@ function resetProgress() {
   localStorage.removeItem("carDestroySaveData");
 
   playerDisplayName = "Player";
+  selectedArena = "Junkyard";
   currentLevel = 1;
   xp = 0;
   xpNeeded = 5;
@@ -611,11 +692,11 @@ function resetProgress() {
   backgroundColorSelect.value = "#141820";
   playerNameInput.value = "Player";
 
-  if (scene) {
-    scene.background = new THREE.Color(backgroundColorSelect.value);
-  }
+  scene.background = new THREE.Color(backgroundColorSelect.value);
+  createSelectedArena();
 
   customPanel.style.display = "none";
+  arenaMenu.style.display = "none";
   message.textContent = "Save reset!";
 
   setTimeout(() => {
@@ -630,15 +711,6 @@ function resetProgress() {
 window.resetProgress = resetProgress;
 
 function applyCustomization() {
-  const newName = playerNameInput.value.trim();
-
-  if (newName !== "") {
-    playerDisplayName = newName;
-  } else {
-    playerDisplayName = "Player";
-    playerNameInput.value = "Player";
-  }
-
   scene.background = new THREE.Color(backgroundColorSelect.value);
 
   message.textContent = "Customization saved!";
@@ -698,7 +770,6 @@ function init3D() {
   scene.add(grid);
 
   createArenaWalls();
-  createJunkyardArena();
 
   window.addEventListener("resize", onResize);
 
@@ -740,28 +811,54 @@ function createArenaWalls() {
   scene.add(wall4);
 }
 
+function createSelectedArena() {
+  arenaObjects.forEach(obj => scene.remove(obj));
+  arenaObjects = [];
+
+  if (!ground) return;
+
+  if (selectedArena === "Junkyard") {
+    ground.material.color.set(0x2d3436);
+    createJunkyardArena();
+  }
+
+  if (selectedArena === "Desert") {
+    ground.material.color.set(0xb8864b);
+    createDesertArena();
+  }
+
+  if (selectedArena === "Factory") {
+    ground.material.color.set(0x404040);
+    createFactoryArena();
+  }
+
+  if (selectedArena === "Parking Garage") {
+    ground.material.color.set(0x555555);
+    createParkingGarageArena();
+  }
+}
+
+function addArenaObject(obj) {
+  scene.add(obj);
+  arenaObjects.push(obj);
+}
+
 function createJunkyardArena() {
   const barrelMaterial = new THREE.MeshStandardMaterial({ color: 0xff6600 });
   const tireMaterial = new THREE.MeshStandardMaterial({ color: 0x050505 });
   const scrapMaterial = new THREE.MeshStandardMaterial({ color: 0x777777 });
 
   for (let i = 0; i < 12; i++) {
-    const barrel = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.6, 0.6, 1.4, 18),
-      barrelMaterial
-    );
+    const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 1.4, 18), barrelMaterial);
     barrel.position.set(randomBetween(-38, 38), 0.7, randomBetween(-38, 38));
-    scene.add(barrel);
+    addArenaObject(barrel);
   }
 
   for (let i = 0; i < 8; i++) {
-    const tire = new THREE.Mesh(
-      new THREE.TorusGeometry(0.75, 0.22, 12, 24),
-      tireMaterial
-    );
+    const tire = new THREE.Mesh(new THREE.TorusGeometry(0.75, 0.22, 12, 24), tireMaterial);
     tire.position.set(randomBetween(-38, 38), 0.5, randomBetween(-38, 38));
     tire.rotation.x = Math.PI / 2;
-    scene.add(tire);
+    addArenaObject(tire);
   }
 
   for (let i = 0; i < 10; i++) {
@@ -771,18 +868,89 @@ function createJunkyardArena() {
     );
     scrap.position.set(randomBetween(-38, 38), 0.8, randomBetween(-38, 38));
     scrap.rotation.y = Math.random() * Math.PI;
-    scene.add(scrap);
+    addArenaObject(scrap);
+  }
+}
+
+function createDesertArena() {
+  const rockMaterial = new THREE.MeshStandardMaterial({ color: 0x8b5a2b });
+  const cactusMaterial = new THREE.MeshStandardMaterial({ color: 0x1f8f3a });
+
+  for (let i = 0; i < 14; i++) {
+    const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(randomBetween(0.8, 1.8)), rockMaterial);
+    rock.position.set(randomBetween(-38, 38), 0.8, randomBetween(-38, 38));
+    addArenaObject(rock);
   }
 
-  for (let i = 0; i < 3; i++) {
-    const ramp = new THREE.Mesh(
-      new THREE.BoxGeometry(5, 0.5, 8),
-      new THREE.MeshStandardMaterial({ color: 0x888888 })
-    );
-    ramp.position.set(randomBetween(-25, 25), 0.35, randomBetween(-25, 25));
-    ramp.rotation.x = -0.25;
-    ramp.rotation.y = Math.random() * Math.PI;
-    scene.add(ramp);
+  for (let i = 0; i < 8; i++) {
+    const cactus = new THREE.Group();
+
+    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.35, 2.2, 12), cactusMaterial);
+    stem.position.y = 1.1;
+    cactus.add(stem);
+
+    const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 1.1, 12), cactusMaterial);
+    arm.rotation.z = Math.PI / 2;
+    arm.position.set(0.6, 1.4, 0);
+    cactus.add(arm);
+
+    cactus.position.set(randomBetween(-38, 38), 0, randomBetween(-38, 38));
+    addArenaObject(cactus);
+  }
+}
+
+function createFactoryArena() {
+  const crateMaterial = new THREE.MeshStandardMaterial({ color: 0x8b5a2b });
+  const machineMaterial = new THREE.MeshStandardMaterial({ color: 0x777777 });
+  const hazardMaterial = new THREE.MeshStandardMaterial({ color: 0xffcc00 });
+
+  for (let i = 0; i < 12; i++) {
+    const crate = new THREE.Mesh(new THREE.BoxGeometry(2.5, 2.5, 2.5), crateMaterial);
+    crate.position.set(randomBetween(-38, 38), 1.25, randomBetween(-38, 38));
+    crate.rotation.y = Math.random() * Math.PI;
+    addArenaObject(crate);
+  }
+
+  for (let i = 0; i < 5; i++) {
+    const machine = new THREE.Mesh(new THREE.BoxGeometry(4, 2, 3), machineMaterial);
+    machine.position.set(randomBetween(-30, 30), 1, randomBetween(-30, 30));
+    machine.rotation.y = Math.random() * Math.PI;
+    addArenaObject(machine);
+  }
+
+  for (let i = 0; i < 6; i++) {
+    const hazard = new THREE.Mesh(new THREE.BoxGeometry(6, 0.05, 1), hazardMaterial);
+    hazard.position.set(randomBetween(-35, 35), 0.04, randomBetween(-35, 35));
+    hazard.rotation.y = Math.random() * Math.PI;
+    addArenaObject(hazard);
+  }
+}
+
+function createParkingGarageArena() {
+  const pillarMaterial = new THREE.MeshStandardMaterial({ color: 0xcccccc });
+  const carMaterial = new THREE.MeshStandardMaterial({ color: 0x333333 });
+  const lineMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff });
+
+  for (let x = -30; x <= 30; x += 15) {
+    for (let z = -30; z <= 30; z += 15) {
+      const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 4, 18), pillarMaterial);
+      pillar.position.set(x, 2, z);
+      addArenaObject(pillar);
+    }
+  }
+
+  for (let i = 0; i < 8; i++) {
+    const parked = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.8, 4), carMaterial);
+    parked.position.set(randomBetween(-35, 35), 0.4, randomBetween(-35, 35));
+    parked.rotation.y = Math.random() * Math.PI;
+    addArenaObject(parked);
+  }
+
+  for (let i = 0; i < 12; i++) {
+    const line = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.03, 7), lineMaterial);
+    line.position.set(randomBetween(-38, 38), 0.03, randomBetween(-38, 38));
+    line.rotation.y = Math.random() > 0.5 ? 0 : Math.PI / 2;
+    addArenaObject(line);
   }
 }
 
@@ -824,10 +992,7 @@ function createCar(carColor, wheelColor, hatColor, characterType) {
   ];
 
   wheelPositions.forEach(pos => {
-    const wheel = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.35, 0.35, 0.35, 16),
-      wheelMaterial
-    );
+    const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 0.35, 16), wheelMaterial);
     wheel.rotation.z = Math.PI / 2;
     wheel.position.set(pos[0], pos[1], pos[2]);
     wheel.castShadow = true;
@@ -870,7 +1035,6 @@ function addCharacter(group, characterType, hatColor) {
     new THREE.MeshStandardMaterial({ color: bodyColor })
   );
   driverBody.position.set(0, 1.65, -0.3);
-  driverBody.castShadow = true;
   group.add(driverBody);
 
   const head = new THREE.Mesh(
@@ -878,7 +1042,6 @@ function addCharacter(group, characterType, hatColor) {
     new THREE.MeshStandardMaterial({ color: headColor })
   );
   head.position.set(0, 2.1, -0.3);
-  head.castShadow = true;
   group.add(head);
 
   const hat = new THREE.Mesh(
@@ -886,7 +1049,6 @@ function addCharacter(group, characterType, hatColor) {
     new THREE.MeshStandardMaterial({ color: new THREE.Color(hatColor) })
   );
   hat.position.set(0, 2.55, -0.3);
-  hat.castShadow = true;
   group.add(hat);
 }
 
@@ -905,7 +1067,6 @@ function createWeaponBox(x, z) {
       roughness: 0.35
     })
   );
-  box.castShadow = true;
   group.add(box);
 
   const top = new THREE.Mesh(
@@ -954,6 +1115,7 @@ function createTextSprite(text) {
 
 function startGame() {
   clearGameObjects();
+  createSelectedArena();
 
   scene.background = new THREE.Color(backgroundColorSelect.value);
 
@@ -962,10 +1124,10 @@ function startGame() {
   hud.style.display = "block";
   message.textContent = "";
   customPanel.style.display = "none";
+  arenaMenu.style.display = "none";
 
   currentWeapon = "Flamethrower";
   playerHealth = 100 + (currentLevel - 1) * 15;
-  playerMaxHealth = playerHealth;
   playerSpeed = 0.16 + (currentLevel - 1) * 0.01;
   weaponDamageBoost = 1 + (currentLevel - 1) * 0.08;
 
@@ -1538,14 +1700,18 @@ function updateUI() {
 
   characterText.textContent = characterName;
 
-  playerNameText.textContent = playerDisplayName;
+  if (document.activeElement !== playerNameInput) {
+    playerNameInput.value = playerDisplayName;
+  }
+
   hudPlayerName.textContent = playerDisplayName;
 
   homeLevelText.textContent = currentLevel;
   homeXpText.textContent = xp;
   homeXpNeededText.textContent = xpNeeded;
   homeModeText.textContent = "Solo Battle";
-  homeArenaText.textContent = "Junkyard";
+  homeArenaText.textContent = selectedArena;
+  hudArenaText.textContent = selectedArena;
 }
 
 function getNearestEnemyAngle() {
