@@ -80,6 +80,14 @@
       font-weight: bold;
     }
 
+    #homeStats {
+      font-size: 24px;
+      margin: 20px 0;
+      color: #78e6ff;
+      font-weight: bold;
+      line-height: 1.5;
+    }
+
     button {
       font-size: 24px;
       padding: 14px 34px;
@@ -105,8 +113,16 @@
       Destroy enemy cars and level up.<br>
       Each kill gives 1 XP. Get 5 XP to reach Level 2.
     </p>
+
     <div id="message"></div>
+
+    <div id="homeStats">
+      Current Level: <span id="homeLevelText">1</span><br>
+      XP: <span id="homeXpText">0</span> / <span id="homeXpNeededText">5</span>
+    </div>
+
     <button onclick="startGame()">Start Game</button>
+
     <p>
       Move: WASD / Arrow Keys<br>
       Use weapon: SPACE
@@ -142,6 +158,10 @@ const xpText = document.getElementById("xpText");
 const xpNeededText = document.getElementById("xpNeededText");
 const weaponText = document.getElementById("weaponText");
 const enemyText = document.getElementById("enemyText");
+
+const homeLevelText = document.getElementById("homeLevelText");
+const homeXpText = document.getElementById("homeXpText");
+const homeXpNeededText = document.getElementById("homeXpNeededText");
 
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
@@ -190,21 +210,18 @@ function startGame() {
   enemyBullets = [];
   enemies = [];
 
-  currentLevel = 1;
-  xp = 0;
-  xpNeeded = 5;
-  weaponDamageBoost = 1;
-
   currentWeapon = "Rocket";
 
   player.x = canvas.width / 2;
   player.y = canvas.height / 2;
   player.angle = 0;
-  player.speed = 4;
-  player.maxHealth = 100;
-  player.health = 100;
+  player.speed = 4 + (currentLevel - 1) * 0.15;
+  player.maxHealth = 100 + (currentLevel - 1) * 15;
+  player.health = player.maxHealth;
   player.shield = false;
   player.shieldTime = 0;
+
+  weaponDamageBoost = 1 + (currentLevel - 1) * 0.08;
 
   spawnEnemies(8);
   updateUI();
@@ -233,6 +250,7 @@ function returnHome(text) {
   homeScreen.style.display = "flex";
   info.style.display = "none";
   message.textContent = text;
+  updateUI();
 }
 
 window.addEventListener("keydown", e => {
@@ -450,11 +468,6 @@ function gainXP(amount) {
     xp -= xpNeeded;
     currentLevel++;
 
-    player.maxHealth += 15;
-    player.health = Math.min(player.maxHealth, player.health + 35);
-    player.speed += 0.15;
-    weaponDamageBoost += 0.08;
-
     showLevelUp();
   }
 }
@@ -475,6 +488,10 @@ function updateUI() {
   xpNeededText.textContent = xpNeeded;
   weaponText.textContent = currentWeapon ? currentWeapon : "Empty";
   enemyText.textContent = enemies.length;
+
+  homeLevelText.textContent = currentLevel;
+  homeXpText.textContent = xp;
+  homeXpNeededText.textContent = xpNeeded;
 }
 
 function distance(x1, y1, x2, y2) {
@@ -578,6 +595,7 @@ function gameLoop() {
   requestAnimationFrame(gameLoop);
 }
 
+updateUI();
 gameLoop();
 </script>
 
