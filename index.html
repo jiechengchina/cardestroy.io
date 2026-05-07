@@ -19,93 +19,234 @@
     #homeScreen {
       position: fixed;
       inset: 0;
-      background: radial-gradient(circle, #26384a, #0d1117);
+      background:
+        linear-gradient(135deg, rgba(255,255,255,0.05) 25%, transparent 25%) 0 0 / 90px 90px,
+        linear-gradient(225deg, rgba(255,255,255,0.05) 25%, transparent 25%) 0 0 / 90px 90px,
+        radial-gradient(circle at center, #5aa9ff, #1d5fc5 60%, #12408e);
       color: white;
+      z-index: 10;
+      overflow: hidden;
+    }
+
+    #topBar {
+      position: absolute;
+      top: 10px;
+      left: 15px;
+      right: 15px;
+      height: 45px;
       display: flex;
       align-items: center;
-      justify-content: center;
-      text-align: center;
-      z-index: 10;
-    }
-
-    #homeBox {
-      background: rgba(0,0,0,0.58);
-      padding: 34px;
-      border-radius: 22px;
-      width: 650px;
-      box-shadow: 0 0 35px rgba(0,0,0,0.6);
-    }
-
-    #homeBox h1 {
-      font-size: 54px;
-      margin: 0 0 10px;
-    }
-
-    #homeBox p {
-      font-size: 17px;
-      color: #ddd;
-      line-height: 1.45;
-    }
-
-    #message {
-      color: #78e6ff;
-      font-size: 22px;
-      font-weight: bold;
-      margin: 14px 0;
-      min-height: 28px;
-    }
-
-    #homeStats {
-      color: #78e6ff;
-      font-size: 22px;
-      font-weight: bold;
-      margin: 15px 0;
-      line-height: 1.45;
-    }
-
-    #customBox {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
       gap: 12px;
-      margin: 18px 0;
-      text-align: left;
+      justify-content: flex-end;
     }
 
-    .customItem {
-      background: rgba(255,255,255,0.08);
-      padding: 10px;
-      border-radius: 10px;
-    }
-
-    .customItem label {
-      display: block;
-      font-size: 14px;
-      color: #cfefff;
-      margin-bottom: 5px;
-      font-weight: bold;
-    }
-
-    select {
-      width: 100%;
-      padding: 8px;
-      border-radius: 8px;
-      border: none;
-      font-size: 15px;
-    }
-
-    button {
-      font-size: 23px;
-      padding: 13px 34px;
-      border: none;
+    .topBadge,
+    .topButton {
+      background: linear-gradient(#66c9ff, #1c82d4);
+      border: 3px solid #9ee3ff;
       border-radius: 12px;
-      background: #00bfff;
+      padding: 8px 18px;
+      font-weight: bold;
+      color: white;
+      box-shadow: 0 4px 0 rgba(0,0,0,0.25);
+    }
+
+    .topBadge:first-child {
+      margin-right: auto;
+    }
+
+    #leftPanel {
+      position: absolute;
+      left: 22px;
+      top: 75px;
+      width: 220px;
+    }
+
+    .currencyBox,
+    .profileBox,
+    .newsBox {
+      background: rgba(0, 139, 255, 0.65);
+      border: 3px solid #8be0ff;
+      border-radius: 16px;
+      padding: 12px;
+      margin-bottom: 14px;
+      box-shadow: 0 5px 0 rgba(0,0,0,0.25);
+    }
+
+    .currencyBox div {
+      background: rgba(255,255,255,0.2);
+      margin: 7px 0;
+      padding: 9px;
+      border-radius: 10px;
+      font-size: 17px;
+    }
+
+    .playerName {
+      background: #2aa7ff;
+      border-radius: 9px;
+      padding: 8px;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    .orangeBtn,
+    .blueBtn {
+      width: 100%;
+      margin-top: 8px;
+      font-size: 18px;
+      padding: 9px;
+      border-radius: 11px;
+      border: none;
       color: white;
       font-weight: bold;
       cursor: pointer;
     }
 
-    button:hover {
-      background: #0099cc;
+    .orangeBtn {
+      background: linear-gradient(#ffb13b, #ff7a00);
+    }
+
+    .blueBtn {
+      background: linear-gradient(#69c9ff, #1685df);
+    }
+
+    .newsBox h3 {
+      margin: 0 0 8px;
+    }
+
+    .newsItem {
+      background: rgba(255,255,255,0.2);
+      padding: 8px;
+      border-radius: 8px;
+      margin: 7px 0;
+      font-size: 14px;
+    }
+
+    #centerLobby {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+    }
+
+    #gameLogo {
+      margin-bottom: 24px;
+      text-align: center;
+    }
+
+    #logoImage {
+      width: 540px;
+      max-width: 80vw;
+      height: auto;
+      filter: drop-shadow(0 8px 12px rgba(0,0,0,0.45));
+      border-radius: 16px;
+    }
+
+    #homeStats {
+      font-size: 22px;
+      font-weight: bold;
+      color: white;
+      background: rgba(0,0,0,0.25);
+      border-radius: 15px;
+      padding: 14px 26px;
+      display: inline-block;
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+
+    #bigPlayButton {
+      display: block;
+      margin: 0 auto;
+      font-size: 44px;
+      font-weight: 900;
+      padding: 18px 72px;
+      border: 5px solid #ffe98a;
+      border-radius: 20px;
+      color: white;
+      background: linear-gradient(#ffe45c, #ff8c00);
+      box-shadow:
+        0 8px 0 #b94c00,
+        0 12px 25px rgba(0,0,0,0.4);
+      cursor: pointer;
+    }
+
+    #bigPlayButton:hover {
+      transform: scale(1.04);
+    }
+
+    #smallButtons {
+      margin-top: 18px;
+    }
+
+    .smallBlue {
+      font-size: 22px;
+      padding: 10px 34px;
+      border-radius: 18px;
+      border: 3px solid #94ddff;
+      color: white;
+      background: linear-gradient(#54c5ff, #117bd0);
+      font-weight: bold;
+      margin: 0 5px;
+    }
+
+    #customPanel {
+      position: absolute;
+      right: 25px;
+      top: 95px;
+      width: 230px;
+      background: rgba(0, 139, 255, 0.65);
+      border: 3px solid #8be0ff;
+      border-radius: 16px;
+      padding: 14px;
+      box-shadow: 0 5px 0 rgba(0,0,0,0.25);
+    }
+
+    #customPanel h3 {
+      margin: 0 0 10px;
+    }
+
+    #customPanel label {
+      display: block;
+      margin-top: 10px;
+      font-weight: bold;
+      color: #e8f8ff;
+    }
+
+    #customPanel select {
+      width: 100%;
+      padding: 7px;
+      border-radius: 8px;
+      border: none;
+      margin-top: 4px;
+    }
+
+    #bottomBar {
+      position: absolute;
+      right: 25px;
+      bottom: 18px;
+      display: flex;
+      gap: 10px;
+    }
+
+    .bottomIcon {
+      width: 58px;
+      height: 58px;
+      border-radius: 16px;
+      border: 4px solid #9ee3ff;
+      background: linear-gradient(#58c7ff, #126fd0);
+      color: white;
+      font-size: 22px;
+      font-weight: bold;
+    }
+
+    #message {
+      margin-top: 20px;
+      font-size: 24px;
+      font-weight: bold;
+      color: #fff176;
+      text-shadow: 2px 2px 0 #000;
+      min-height: 30px;
     }
 
     #hud {
@@ -127,6 +268,11 @@
       padding: 6px 12px;
       margin-top: 6px;
       border-radius: 8px;
+      border: none;
+      background: #00bfff;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
     }
 
     #levelMessage {
@@ -146,89 +292,113 @@
 <body>
 
 <div id="homeScreen">
-  <div id="homeBox">
-    <h1>CarDestroy.io 3D</h1>
-    <p>
-      Drive a 3D battle car. Collect weapon boxes. Destroy enemies.<br>
-      Each kill gives 1 XP. Get 5 XP to level up.
-    </p>
+  <div id="topBar">
+    <div class="topBadge">⭐ Level <span id="homeLevelText">1</span></div>
+    <div class="topBadge">🏆 Seasons</div>
+    <div class="topButton">Shop</div>
+    <div class="topButton">Free</div>
+    <div class="topButton">Settings</div>
+  </div>
 
-    <div id="message"></div>
+  <div id="leftPanel">
+    <div class="currencyBox">
+      <div>📦 Parts: <b>999</b></div>
+      <div>🪙 Coins: <b>999999</b></div>
+      <div>💎 Gems: <b>999999</b></div>
+    </div>
+
+    <div class="profileBox">
+      <div class="playerName">Player</div>
+      <button class="orangeBtn">Customize</button>
+      <button class="blueBtn">Garage</button>
+    </div>
+
+    <div class="newsBox">
+      <h3>News</h3>
+      <div class="newsItem">🔥 New Junkyard Arena</div>
+      <div class="newsItem">🚗 3D cars added</div>
+      <div class="newsItem">🎁 Weapon boxes are live</div>
+    </div>
+  </div>
+
+  <div id="centerLobby">
+    <div id="gameLogo">
+      <img src="logo.png" alt="CarDestroy.io Logo" id="logoImage">
+    </div>
 
     <div id="homeStats">
-      Current Level: <span id="homeLevelText">1</span><br>
       XP: <span id="homeXpText">0</span> / <span id="homeXpNeededText">5</span><br>
-      Mode: <span id="homeModeText">Solo Battle</span>
+      Mode: <span id="homeModeText">Solo Battle</span><br>
+      Arena: <span id="homeArenaText">Junkyard</span>
     </div>
 
-    <div id="customBox">
-      <div class="customItem">
-        <label>Character</label>
-        <select id="characterSelect">
-          <option value="driver">Driver</option>
-          <option value="robot">Robot</option>
-          <option value="racer">Racer</option>
-          <option value="ninja">Ninja</option>
-        </select>
-      </div>
+    <button id="bigPlayButton" onclick="startGame()">▶ PLAY</button>
 
-      <div class="customItem">
-        <label>Car Color</label>
-        <select id="carColorSelect">
-          <option value="#00bfff">Blue</option>
-          <option value="#ff3333">Red</option>
-          <option value="#33cc33">Green</option>
-          <option value="#ffcc00">Yellow</option>
-          <option value="#9b59ff">Purple</option>
-          <option value="#ff8c00">Orange</option>
-          <option value="#ffffff">White</option>
-          <option value="#111111">Black</option>
-        </select>
-      </div>
-
-      <div class="customItem">
-        <label>Wheel Color</label>
-        <select id="wheelColorSelect">
-          <option value="#050505">Black</option>
-          <option value="#777777">Gray</option>
-          <option value="#ffffff">White</option>
-          <option value="#ff3333">Red</option>
-          <option value="#00bfff">Blue</option>
-        </select>
-      </div>
-
-      <div class="customItem">
-        <label>Hat Color</label>
-        <select id="hatColorSelect">
-          <option value="#ff3333">Red</option>
-          <option value="#00bfff">Blue</option>
-          <option value="#33cc33">Green</option>
-          <option value="#ffcc00">Yellow</option>
-          <option value="#111111">Black</option>
-          <option value="#ff66cc">Pink</option>
-        </select>
-      </div>
-
-      <div class="customItem">
-        <label>Background Color</label>
-        <select id="backgroundColorSelect">
-          <option value="#141820">Dark Arena</option>
-          <option value="#102542">Blue Night</option>
-          <option value="#241033">Purple Night</option>
-          <option value="#123322">Green Arena</option>
-          <option value="#3a2412">Desert Orange</option>
-        </select>
-      </div>
+    <div id="smallButtons">
+      <button class="smallBlue">Create</button>
+      <button class="smallBlue">Join</button>
     </div>
 
-    <button onclick="startGame()">Start Game</button>
+    <div id="message"></div>
+  </div>
 
-    <p>
-      Move: WASD / Arrow Keys<br>
-      Use Weapon: SPACE<br>
-      Change Camera: C<br>
-      Flamethrower: Press SPACE to shoot fire
-    </p>
+  <div id="customPanel">
+    <h3>Customize</h3>
+
+    <label>Character</label>
+    <select id="characterSelect">
+      <option value="driver">Driver</option>
+      <option value="robot">Robot</option>
+      <option value="racer">Racer</option>
+      <option value="ninja">Ninja</option>
+    </select>
+
+    <label>Car Color</label>
+    <select id="carColorSelect">
+      <option value="#00bfff">Blue</option>
+      <option value="#ff3333">Red</option>
+      <option value="#33cc33">Green</option>
+      <option value="#ffcc00">Yellow</option>
+      <option value="#9b59ff">Purple</option>
+      <option value="#ff8c00">Orange</option>
+      <option value="#ffffff">White</option>
+      <option value="#111111">Black</option>
+    </select>
+
+    <label>Wheel Color</label>
+    <select id="wheelColorSelect">
+      <option value="#050505">Black</option>
+      <option value="#777777">Gray</option>
+      <option value="#ffffff">White</option>
+      <option value="#ff3333">Red</option>
+      <option value="#00bfff">Blue</option>
+    </select>
+
+    <label>Hat Color</label>
+    <select id="hatColorSelect">
+      <option value="#ff3333">Red</option>
+      <option value="#00bfff">Blue</option>
+      <option value="#33cc33">Green</option>
+      <option value="#ffcc00">Yellow</option>
+      <option value="#111111">Black</option>
+      <option value="#ff66cc">Pink</option>
+    </select>
+
+    <label>Background Color</label>
+    <select id="backgroundColorSelect">
+      <option value="#141820">Dark Arena</option>
+      <option value="#102542">Blue Night</option>
+      <option value="#241033">Purple Night</option>
+      <option value="#123322">Green Arena</option>
+      <option value="#3a2412">Desert Orange</option>
+    </select>
+  </div>
+
+  <div id="bottomBar">
+    <button class="bottomIcon">🌎</button>
+    <button class="bottomIcon">⚙️</button>
+    <button class="bottomIcon">🎮</button>
+    <button class="bottomIcon">💬</button>
   </div>
 </div>
 
@@ -272,6 +442,7 @@ const homeLevelText = document.getElementById("homeLevelText");
 const homeXpText = document.getElementById("homeXpText");
 const homeXpNeededText = document.getElementById("homeXpNeededText");
 const homeModeText = document.getElementById("homeModeText");
+const homeArenaText = document.getElementById("homeArenaText");
 
 const characterSelect = document.getElementById("characterSelect");
 const carColorSelect = document.getElementById("carColorSelect");
@@ -361,6 +532,7 @@ function init3D() {
   scene.add(grid);
 
   createArenaWalls();
+  createJunkyardArena();
 
   window.addEventListener("resize", onResize);
 
@@ -373,10 +545,7 @@ function init3D() {
 
     if (e.code === "Space" && gameState === "playing") {
       e.preventDefault();
-
-      if (!e.repeat) {
-        useWeapon();
-      }
+      if (!e.repeat) useWeapon();
     }
   });
 
@@ -405,6 +574,52 @@ function createArenaWalls() {
   scene.add(wall4);
 }
 
+function createJunkyardArena() {
+  const barrelMaterial = new THREE.MeshStandardMaterial({ color: 0xff6600 });
+  const tireMaterial = new THREE.MeshStandardMaterial({ color: 0x050505 });
+  const scrapMaterial = new THREE.MeshStandardMaterial({ color: 0x777777 });
+
+  for (let i = 0; i < 12; i++) {
+    const barrel = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.6, 0.6, 1.4, 18),
+      barrelMaterial
+    );
+    barrel.position.set(randomBetween(-38, 38), 0.7, randomBetween(-38, 38));
+    scene.add(barrel);
+  }
+
+  for (let i = 0; i < 8; i++) {
+    const tire = new THREE.Mesh(
+      new THREE.TorusGeometry(0.75, 0.22, 12, 24),
+      tireMaterial
+    );
+    tire.position.set(randomBetween(-38, 38), 0.5, randomBetween(-38, 38));
+    tire.rotation.x = Math.PI / 2;
+    scene.add(tire);
+  }
+
+  for (let i = 0; i < 10; i++) {
+    const scrap = new THREE.Mesh(
+      new THREE.BoxGeometry(randomBetween(2, 5), randomBetween(1, 2.5), randomBetween(2, 5)),
+      scrapMaterial
+    );
+    scrap.position.set(randomBetween(-38, 38), 0.8, randomBetween(-38, 38));
+    scrap.rotation.y = Math.random() * Math.PI;
+    scene.add(scrap);
+  }
+
+  for (let i = 0; i < 3; i++) {
+    const ramp = new THREE.Mesh(
+      new THREE.BoxGeometry(5, 0.5, 8),
+      new THREE.MeshStandardMaterial({ color: 0x888888 })
+    );
+    ramp.position.set(randomBetween(-25, 25), 0.35, randomBetween(-25, 25));
+    ramp.rotation.x = -0.25;
+    ramp.rotation.y = Math.random() * Math.PI;
+    scene.add(ramp);
+  }
+}
+
 function createCar(carColor, wheelColor, hatColor, characterType) {
   const group = new THREE.Group();
 
@@ -426,10 +641,7 @@ function createCar(carColor, wheelColor, hatColor, characterType) {
 
   const frontLight = new THREE.Mesh(
     new THREE.BoxGeometry(1.2, 0.2, 0.25),
-    new THREE.MeshStandardMaterial({
-      color: 0xffffff,
-      emissive: 0x222222
-    })
+    new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0x222222 })
   );
   frontLight.position.set(0, 0.95, -2.05);
   group.add(frontLight);
@@ -532,10 +744,7 @@ function createWeaponBox(x, z) {
 
   const top = new THREE.Mesh(
     new THREE.BoxGeometry(2.25, 0.25, 2.25),
-    new THREE.MeshStandardMaterial({
-      color: 0xffffff,
-      emissive: 0x222222
-    })
+    new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0x222222 })
   );
   top.position.y = 1.1;
   group.add(top);
@@ -609,7 +818,7 @@ function startGame() {
   scene.add(player);
 
   spawnEnemies(8);
-  spawnWeaponBoxes(8);
+  spawnWeaponBoxes(10);
 
   updateUI();
 }
@@ -650,11 +859,7 @@ function spawnEnemies(count) {
   for (let i = 0; i < count; i++) {
     const enemy = createEnemyCar();
 
-    enemy.position.set(
-      randomBetween(-35, 35),
-      0,
-      randomBetween(-35, 35)
-    );
+    enemy.position.set(randomBetween(-35, 35), 0, randomBetween(-35, 35));
 
     enemy.userData.health = 100 + currentLevel * 10;
     enemy.userData.maxHealth = 100 + currentLevel * 10;
@@ -724,12 +929,7 @@ function updateCamera() {
   }
 
   if (cameraMode === 2) {
-    targetPosition = new THREE.Vector3(
-      player.position.x,
-      36,
-      player.position.z + 0.1
-    );
-
+    targetPosition = new THREE.Vector3(player.position.x, 36, player.position.z + 0.1);
     camera.position.lerp(targetPosition, 0.12);
     camera.lookAt(player.position.x, player.position.y, player.position.z);
   }
@@ -789,15 +989,11 @@ function useWeapon() {
 function shootRocket(angle) {
   const mesh = new THREE.Mesh(
     new THREE.SphereGeometry(0.35, 16, 16),
-    new THREE.MeshStandardMaterial({
-      color: 0xff0000,
-      emissive: 0xaa0000
-    })
+    new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xaa0000 })
   );
 
   mesh.position.copy(player.position);
   mesh.position.y = 1;
-
   scene.add(mesh);
 
   rockets.push({
@@ -812,10 +1008,7 @@ function dropMines() {
   for (let i = 0; i < 4; i++) {
     const mesh = new THREE.Mesh(
       new THREE.CylinderGeometry(0.65, 0.65, 0.25, 20),
-      new THREE.MeshStandardMaterial({
-        color: 0x111111,
-        emissive: 0x330000
-      })
+      new THREE.MeshStandardMaterial({ color: 0x111111, emissive: 0x330000 })
     );
 
     const back = new THREE.Vector3(
@@ -827,7 +1020,6 @@ function dropMines() {
     mesh.position.copy(player.position);
     mesh.position.add(back.multiplyScalar(2.8 + i * 1.5));
     mesh.position.y = 0.2;
-
     scene.add(mesh);
 
     mines.push({
@@ -843,15 +1035,11 @@ function shootRifle() {
   for (let i = -1.5; i <= 1.5; i++) {
     const mesh = new THREE.Mesh(
       new THREE.SphereGeometry(0.18, 12, 12),
-      new THREE.MeshStandardMaterial({
-        color: 0xffff00,
-        emissive: 0x999900
-      })
+      new THREE.MeshStandardMaterial({ color: 0xffff00, emissive: 0x999900 })
     );
 
     mesh.position.copy(player.position);
     mesh.position.y = 1;
-
     scene.add(mesh);
 
     bullets.push({
@@ -973,15 +1161,11 @@ function enemyShoot(enemy) {
 
   const mesh = new THREE.Mesh(
     new THREE.SphereGeometry(0.22, 12, 12),
-    new THREE.MeshStandardMaterial({
-      color: 0xff66ff,
-      emissive: 0xaa00aa
-    })
+    new THREE.MeshStandardMaterial({ color: 0xff66ff, emissive: 0xaa00aa })
   );
 
   mesh.position.copy(enemy.position);
   mesh.position.y = 1;
-
   scene.add(mesh);
 
   enemyBullets.push({
@@ -1005,10 +1189,7 @@ function updateProjectileArray(array, isEnemyBullet) {
 
     item.mesh.position.add(forward.clone().multiplyScalar(item.speed));
 
-    if (
-      Math.abs(item.mesh.position.x) > 46 ||
-      Math.abs(item.mesh.position.z) > 46
-    ) {
+    if (Math.abs(item.mesh.position.x) > 46 || Math.abs(item.mesh.position.z) > 46) {
       scene.remove(item.mesh);
       array.splice(i, 1);
       continue;
@@ -1029,7 +1210,6 @@ function updateProjectileArray(array, isEnemyBullet) {
 
         if (distance2D(item.mesh.position, enemy.position) < 1.5) {
           enemy.userData.health -= item.damage;
-
           scene.remove(item.mesh);
           array.splice(i, 1);
           break;
@@ -1053,7 +1233,6 @@ function updateFire() {
 
       if (distance2D(fire.mesh.position, enemy.position) < 1.7) {
         enemy.userData.health -= fire.damage;
-
         scene.remove(fire.mesh);
         fireParticles.splice(i, 1);
         break;
@@ -1080,7 +1259,6 @@ function updateMines() {
 
       if (distance2D(mine.mesh.position, enemy.position) < 1.8) {
         enemy.userData.health -= mine.damage;
-
         scene.remove(mine.mesh);
         mines.splice(i, 1);
         break;
@@ -1161,7 +1339,7 @@ function showLevelUp() {
 
 function returnHome(text) {
   gameState = "home";
-  homeScreen.style.display = "flex";
+  homeScreen.style.display = "block";
   hud.style.display = "none";
   message.textContent = text;
   updateUI();
@@ -1189,10 +1367,11 @@ function updateUI() {
   homeXpText.textContent = xp;
   homeXpNeededText.textContent = xpNeeded;
   homeModeText.textContent = "Solo Battle";
+  homeArenaText.textContent = "Junkyard";
 }
 
 function getNearestEnemyAngle() {
-  if (enemies.length === 0) return player.rotation.y;
+  if (enemies.length === 0 || !player) return 0;
 
   let nearest = enemies[0];
   let nearestDistance = distance2D(player.position, nearest.position);
