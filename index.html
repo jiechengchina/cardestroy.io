@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>CarDestroy.io</title>
+  <title>CarDestroy.io 3D</title>
   <style>
     body {
       margin: 0;
@@ -10,35 +10,10 @@
       font-family: Arial, sans-serif;
     }
 
-    canvas {
+    #gameCanvas {
       display: block;
-      background: #222;
-    }
-
-    #info {
-      position: fixed;
-      top: 15px;
-      left: 15px;
-      color: white;
-      font-size: 18px;
-      background: rgba(0,0,0,0.5);
-      padding: 12px 16px;
-      border-radius: 10px;
-      display: none;
-      line-height: 1.5;
-    }
-
-    #levelMessage {
-      position: fixed;
-      top: 45%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      color: #78e6ff;
-      font-size: 52px;
-      font-weight: bold;
-      text-shadow: 0 0 20px black;
-      display: none;
-      z-index: 20;
+      width: 100vw;
+      height: 100vh;
     }
 
     #homeScreen {
@@ -54,37 +29,37 @@
     }
 
     #homeBox {
-      background: rgba(0,0,0,0.45);
+      background: rgba(0,0,0,0.55);
       padding: 40px;
-      border-radius: 20px;
-      width: 560px;
-      box-shadow: 0 0 30px rgba(0,0,0,0.5);
+      border-radius: 22px;
+      width: 580px;
+      box-shadow: 0 0 35px rgba(0,0,0,0.6);
     }
 
     #homeBox h1 {
-      font-size: 52px;
+      font-size: 56px;
       margin-bottom: 10px;
     }
 
     #homeBox p {
       font-size: 18px;
-      line-height: 1.5;
       color: #ddd;
+      line-height: 1.5;
     }
 
     #message {
       color: #78e6ff;
       font-size: 24px;
-      margin: 20px 0;
-      min-height: 32px;
       font-weight: bold;
+      margin: 18px 0;
+      min-height: 32px;
     }
 
     #homeStats {
-      font-size: 24px;
-      margin: 20px 0;
       color: #78e6ff;
+      font-size: 24px;
       font-weight: bold;
+      margin: 20px 0;
       line-height: 1.5;
     }
 
@@ -95,12 +70,39 @@
       border-radius: 12px;
       background: #00bfff;
       color: white;
-      cursor: pointer;
       font-weight: bold;
+      cursor: pointer;
     }
 
     button:hover {
       background: #0099cc;
+    }
+
+    #hud {
+      position: fixed;
+      left: 15px;
+      top: 15px;
+      color: white;
+      font-size: 18px;
+      line-height: 1.5;
+      background: rgba(0,0,0,0.55);
+      padding: 12px 16px;
+      border-radius: 12px;
+      display: none;
+      z-index: 5;
+    }
+
+    #levelMessage {
+      position: fixed;
+      top: 42%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: #78e6ff;
+      font-size: 56px;
+      font-weight: bold;
+      text-shadow: 0 0 20px black;
+      display: none;
+      z-index: 9;
     }
   </style>
 </head>
@@ -108,10 +110,10 @@
 
 <div id="homeScreen">
   <div id="homeBox">
-    <h1>CarDestroy.io</h1>
+    <h1>CarDestroy.io 3D</h1>
     <p>
-      Destroy enemy cars and level up.<br>
-      Each kill gives 1 XP. Get 5 XP to reach Level 2.
+      Drive a 3D battle car. Collect visible weapon boxes.<br>
+      Each kill gives 1 XP. Get 5 XP to level up.
     </p>
 
     <div id="message"></div>
@@ -125,32 +127,33 @@
 
     <p>
       Move: WASD / Arrow Keys<br>
-      Use weapon: SPACE<br>
+      Use Weapon: SPACE<br>
       Flamethrower: Hold SPACE, then release
     </p>
   </div>
 </div>
 
-<div id="levelMessage">LEVEL UP!</div>
-
-<div id="info">
-  <b>CarDestroy.io</b><br>
+<div id="hud">
+  <b>CarDestroy.io 3D</b><br>
   Health: <span id="healthText">100</span><br>
   Current Level: <span id="levelText">1</span><br>
   XP: <span id="xpText">0</span> / <span id="xpNeededText">5</span><br>
   Weapon: <span id="weaponText">Flamethrower</span><br>
   Charge: <span id="chargeText">0</span>s<br>
-  Enemies left: <span id="enemyText">0</span>
+  Enemies Left: <span id="enemyText">0</span>
 </div>
 
-<canvas id="game"></canvas>
+<div id="levelMessage">LEVEL UP!</div>
 
-<script>
-const canvas = document.getElementById("game");
-const ctx = canvas.getContext("2d");
+<canvas id="gameCanvas"></canvas>
+
+<script type="module">
+import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
+
+const canvas = document.getElementById("gameCanvas");
 
 const homeScreen = document.getElementById("homeScreen");
-const info = document.getElementById("info");
+const hud = document.getElementById("hud");
 const message = document.getElementById("message");
 const levelMessage = document.getElementById("levelMessage");
 
@@ -166,201 +169,490 @@ const homeLevelText = document.getElementById("homeLevelText");
 const homeXpText = document.getElementById("homeXpText");
 const homeXpNeededText = document.getElementById("homeXpNeededText");
 
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
-
-const keys = {};
-
+let scene, camera, renderer;
+let player;
+let enemies = [];
 let bullets = [];
 let rockets = [];
 let mines = [];
 let enemyBullets = [];
-let enemies = [];
-let flameBlasts = [];
+let weaponBoxes = [];
+let flameEffects = [];
 
 let gameState = "home";
+let keys = {};
 
 let currentLevel = 1;
 let xp = 0;
 let xpNeeded = 5;
 
-let weaponDamageBoost = 1;
-
-const weapons = ["Rocket", "Mine", "Flamethrower", "Shield", "Rifle"];
 let currentWeapon = "Flamethrower";
+const weapons = ["Rocket", "Mine", "Flamethrower", "Shield", "Rifle"];
 
 let spaceHeld = false;
 let flameCharging = false;
 let flameChargeStart = 0;
 let flameChargeSeconds = 0;
 
-const player = {
-  x: canvas.width / 2,
-  y: canvas.height / 2,
-  angle: 0,
-  speed: 4,
-  width: 45,
-  height: 25,
-  health: 100,
-  maxHealth: 100,
-  shield: false,
-  shieldTime: 0
-};
+let playerHealth = 100;
+let playerMaxHealth = 100;
+let playerSpeed = 0.16;
+let weaponDamageBoost = 1;
+let shieldActive = false;
+let shieldTime = 0;
+let shieldMesh = null;
+
+init3D();
+updateUI();
+animate();
+
+function init3D() {
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x141820);
+
+  camera = new THREE.PerspectiveCamera(
+    70,
+    window.innerWidth / window.innerHeight,
+    0.1,
+    1000
+  );
+
+  renderer = new THREE.WebGLRenderer({
+    canvas,
+    antialias: true
+  });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.shadowMap.enabled = true;
+
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.55);
+  scene.add(ambientLight);
+
+  const sun = new THREE.DirectionalLight(0xffffff, 1.1);
+  sun.position.set(20, 35, 20);
+  sun.castShadow = true;
+  scene.add(sun);
+
+  const groundGeometry = new THREE.PlaneGeometry(90, 90);
+  const groundMaterial = new THREE.MeshStandardMaterial({
+    color: 0x2d3436,
+    roughness: 0.9
+  });
+  const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+  ground.rotation.x = -Math.PI / 2;
+  ground.receiveShadow = true;
+  scene.add(ground);
+
+  const grid = new THREE.GridHelper(90, 45, 0x444444, 0x333333);
+  scene.add(grid);
+
+  createArenaWalls();
+
+  window.addEventListener("resize", onResize);
+
+  window.addEventListener("keydown", e => {
+    keys[e.key.toLowerCase()] = true;
+
+    if (e.code === "Space" && gameState === "playing") {
+      e.preventDefault();
+
+      if (spaceHeld) return;
+      spaceHeld = true;
+
+      if (currentWeapon === "Flamethrower") {
+        flameCharging = true;
+        flameChargeStart = performance.now();
+        flameChargeSeconds = 0;
+      } else {
+        useWeapon();
+      }
+    }
+  });
+
+  window.addEventListener("keyup", e => {
+    keys[e.key.toLowerCase()] = false;
+
+    if (e.code === "Space") {
+      spaceHeld = false;
+
+      if (
+        gameState === "playing" &&
+        currentWeapon === "Flamethrower" &&
+        flameCharging
+      ) {
+        useFlamethrower();
+      }
+    }
+  });
+}
+
+function createArenaWalls() {
+  const wallMaterial = new THREE.MeshStandardMaterial({ color: 0x555555 });
+
+  const wall1 = new THREE.Mesh(new THREE.BoxGeometry(90, 3, 1), wallMaterial);
+  wall1.position.set(0, 1.5, -45);
+  scene.add(wall1);
+
+  const wall2 = wall1.clone();
+  wall2.position.set(0, 1.5, 45);
+  scene.add(wall2);
+
+  const wall3 = new THREE.Mesh(new THREE.BoxGeometry(1, 3, 90), wallMaterial);
+  wall3.position.set(-45, 1.5, 0);
+  scene.add(wall3);
+
+  const wall4 = wall3.clone();
+  wall4.position.set(45, 1.5, 0);
+  scene.add(wall4);
+}
+
+function createCar(color) {
+  const group = new THREE.Group();
+
+  const body = new THREE.Mesh(
+    new THREE.BoxGeometry(2.5, 0.7, 4),
+    new THREE.MeshStandardMaterial({ color })
+  );
+  body.position.y = 0.55;
+  body.castShadow = true;
+  group.add(body);
+
+  const cabin = new THREE.Mesh(
+    new THREE.BoxGeometry(1.5, 0.7, 1.5),
+    new THREE.MeshStandardMaterial({ color: 0x111111 })
+  );
+  cabin.position.set(0, 1.15, -0.3);
+  cabin.castShadow = true;
+  group.add(cabin);
+
+  const wheelMaterial = new THREE.MeshStandardMaterial({ color: 0x050505 });
+
+  const wheelPositions = [
+    [-1.35, 0.35, 1.35],
+    [1.35, 0.35, 1.35],
+    [-1.35, 0.35, -1.35],
+    [1.35, 0.35, -1.35]
+  ];
+
+  wheelPositions.forEach(pos => {
+    const wheel = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.35, 0.35, 0.35, 16),
+      wheelMaterial
+    );
+    wheel.rotation.z = Math.PI / 2;
+    wheel.position.set(pos[0], pos[1], pos[2]);
+    wheel.castShadow = true;
+    group.add(wheel);
+  });
+
+  group.userData = {
+    health: 100,
+    maxHealth: 100,
+    speed: 0.12,
+    shootCooldown: 100
+  };
+
+  return group;
+}
+
+function createWeaponBox(x, z) {
+  const group = new THREE.Group();
+
+  const box = new THREE.Mesh(
+    new THREE.BoxGeometry(2, 2, 2),
+    new THREE.MeshStandardMaterial({
+      color: 0x00bfff,
+      emissive: 0x005577,
+      roughness: 0.35
+    })
+  );
+  box.castShadow = true;
+  group.add(box);
+
+  const label = createTextSprite("WEAPON");
+  label.position.set(0, 2.1, 0);
+  group.add(label);
+
+  group.position.set(x, 1.1, z);
+  group.userData = {
+    type: weapons[Math.floor(Math.random() * weapons.length)],
+    spin: Math.random() * 0.05 + 0.02
+  };
+
+  scene.add(group);
+  weaponBoxes.push(group);
+}
+
+function createTextSprite(text) {
+  const canvas2 = document.createElement("canvas");
+  canvas2.width = 256;
+  canvas2.height = 64;
+
+  const ctx = canvas2.getContext("2d");
+  ctx.fillStyle = "rgba(0, 0, 0, 0.65)";
+  ctx.fillRect(0, 0, canvas2.width, canvas2.height);
+
+  ctx.fillStyle = "white";
+  ctx.font = "bold 28px Arial";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(text, 128, 32);
+
+  const texture = new THREE.CanvasTexture(canvas2);
+  const material = new THREE.SpriteMaterial({ map: texture });
+  const sprite = new THREE.Sprite(material);
+  sprite.scale.set(5, 1.2, 1);
+  return sprite;
+}
 
 function startGame() {
+  clearGameObjects();
+
   gameState = "playing";
   homeScreen.style.display = "none";
-  info.style.display = "block";
+  hud.style.display = "block";
   message.textContent = "";
 
+  currentWeapon = "Flamethrower";
+  playerHealth = 100 + (currentLevel - 1) * 15;
+  playerMaxHealth = playerHealth;
+  playerSpeed = 0.16 + (currentLevel - 1) * 0.01;
+  weaponDamageBoost = 1 + (currentLevel - 1) * 0.08;
+
+  shieldActive = false;
+  shieldTime = 0;
+  flameCharging = false;
+  flameChargeSeconds = 0;
+  spaceHeld = false;
+
+  player = createCar(0x00bfff);
+  player.position.set(0, 0, 0);
+  player.rotation.y = 0;
+  scene.add(player);
+
+  spawnEnemies(8);
+  spawnWeaponBoxes(8);
+
+  updateUI();
+}
+
+window.startGame = startGame;
+
+function clearGameObjects() {
+  const allObjects = [
+    player,
+    ...enemies,
+    ...bullets.map(b => b.mesh),
+    ...rockets.map(r => r.mesh),
+    ...mines.map(m => m.mesh),
+    ...enemyBullets.map(b => b.mesh),
+    ...weaponBoxes,
+    ...flameEffects
+  ];
+
+  allObjects.forEach(obj => {
+    if (obj) scene.remove(obj);
+  });
+
+  enemies = [];
   bullets = [];
   rockets = [];
   mines = [];
   enemyBullets = [];
-  enemies = [];
-  flameBlasts = [];
+  weaponBoxes = [];
+  flameEffects = [];
 
-  currentWeapon = "Flamethrower";
-  spaceHeld = false;
-  flameCharging = false;
-  flameChargeSeconds = 0;
-
-  player.x = canvas.width / 2;
-  player.y = canvas.height / 2;
-  player.angle = 0;
-  player.speed = 4 + (currentLevel - 1) * 0.15;
-  player.maxHealth = 100 + (currentLevel - 1) * 15;
-  player.health = player.maxHealth;
-  player.shield = false;
-  player.shieldTime = 0;
-
-  weaponDamageBoost = 1 + (currentLevel - 1) * 0.08;
-
-  spawnEnemies(8);
-  updateUI();
+  if (shieldMesh) {
+    scene.remove(shieldMesh);
+    shieldMesh = null;
+  }
 }
 
 function spawnEnemies(count) {
-  enemies = [];
-
   for (let i = 0; i < count; i++) {
-    enemies.push({
-      x: Math.random() * canvas.width,
-      y: Math.random() * canvas.height,
-      width: 45,
-      height: 25,
-      health: 100 + currentLevel * 10,
-      maxHealth: 100 + currentLevel * 10,
-      angle: Math.random() * Math.PI * 2,
-      speed: 1.2 + currentLevel * 0.15,
-      shootCooldown: Math.random() * 120 + 60
-    });
+    const enemy = createCar(0xff8c00);
+
+    enemy.position.set(
+      randomBetween(-35, 35),
+      0,
+      randomBetween(-35, 35)
+    );
+
+    enemy.userData.health = 100 + currentLevel * 10;
+    enemy.userData.maxHealth = 100 + currentLevel * 10;
+    enemy.userData.speed = 0.08 + currentLevel * 0.008;
+    enemy.userData.shootCooldown = randomBetween(70, 160);
+
+    scene.add(enemy);
+    enemies.push(enemy);
   }
 }
 
-function returnHome(text) {
-  gameState = "home";
-  homeScreen.style.display = "flex";
-  info.style.display = "none";
-  message.textContent = text;
-  updateUI();
+function spawnWeaponBoxes(count) {
+  for (let i = 0; i < count; i++) {
+    createWeaponBox(randomBetween(-38, 38), randomBetween(-38, 38));
+  }
 }
-
-window.addEventListener("keydown", e => {
-  keys[e.key] = true;
-
-  if (e.code === "Space" && gameState === "playing") {
-    e.preventDefault();
-
-    if (spaceHeld) return;
-    spaceHeld = true;
-
-    if (currentWeapon === "Flamethrower") {
-      flameCharging = true;
-      flameChargeStart = performance.now();
-      flameChargeSeconds = 0;
-    } else {
-      useWeapon();
-    }
-  }
-});
-
-window.addEventListener("keyup", e => {
-  keys[e.key] = false;
-
-  if (e.code === "Space") {
-    spaceHeld = false;
-
-    if (gameState === "playing" && currentWeapon === "Flamethrower" && flameCharging) {
-      useFlamethrower();
-    }
-  }
-});
 
 function movePlayer() {
-  if (keys["a"] || keys["ArrowLeft"]) player.angle -= 0.06;
-  if (keys["d"] || keys["ArrowRight"]) player.angle += 0.06;
+  if (!player) return;
 
-  if (keys["w"] || keys["ArrowUp"]) {
-    player.x += Math.cos(player.angle) * player.speed;
-    player.y += Math.sin(player.angle) * player.speed;
+  if (keys["a"] || keys["arrowleft"]) {
+    player.rotation.y += 0.045;
   }
 
-  if (keys["s"] || keys["ArrowDown"]) {
-    player.x -= Math.cos(player.angle) * player.speed * 0.7;
-    player.y -= Math.sin(player.angle) * player.speed * 0.7;
+  if (keys["d"] || keys["arrowright"]) {
+    player.rotation.y -= 0.045;
   }
 
-  player.x = Math.max(25, Math.min(canvas.width - 25, player.x));
-  player.y = Math.max(25, Math.min(canvas.height - 25, player.y));
+  const forward = new THREE.Vector3(
+    -Math.sin(player.rotation.y),
+    0,
+    -Math.cos(player.rotation.y)
+  );
+
+  if (keys["w"] || keys["arrowup"]) {
+    player.position.add(forward.multiplyScalar(playerSpeed));
+  }
+
+  if (keys["s"] || keys["arrowdown"]) {
+    player.position.add(forward.multiplyScalar(-playerSpeed * 0.65));
+  }
+
+  player.position.x = clamp(player.position.x, -42, 42);
+  player.position.z = clamp(player.position.z, -42, 42);
+}
+
+function updateCamera() {
+  if (!player) return;
+
+  const behind = new THREE.Vector3(
+    Math.sin(player.rotation.y) * 9,
+    6,
+    Math.cos(player.rotation.y) * 9
+  );
+
+  const targetPosition = player.position.clone().add(behind);
+  camera.position.lerp(targetPosition, 0.08);
+  camera.lookAt(player.position.x, player.position.y + 1.2, player.position.z);
 }
 
 function useWeapon() {
-  if (!currentWeapon) return;
+  if (!currentWeapon || !player) return;
 
   if (currentWeapon === "Rocket") {
     for (let i = -1.5; i <= 1.5; i++) {
-      rockets.push({
-        x: player.x,
-        y: player.y,
-        angle: player.angle + i * 0.18,
-        speed: 7,
-        damage: 45 * weaponDamageBoost
-      });
+      shootRocket(player.rotation.y + i * 0.16);
     }
   }
 
   if (currentWeapon === "Mine") {
-    for (let i = 0; i < 4; i++) {
-      mines.push({
-        x: player.x - Math.cos(player.angle) * (45 + i * 20),
-        y: player.y - Math.sin(player.angle) * (45 + i * 20),
-        radius: 10,
-        damage: 50 * weaponDamageBoost
-      });
-    }
+    dropMines();
   }
 
   if (currentWeapon === "Rifle") {
-    const aimAngle = getNearestEnemyAngle();
-
-    for (let i = -1.5; i <= 1.5; i++) {
-      bullets.push({
-        x: player.x,
-        y: player.y,
-        angle: aimAngle + i * 0.04,
-        speed: 11,
-        damage: 20 * weaponDamageBoost
-      });
-    }
+    shootRifle();
   }
 
   if (currentWeapon === "Shield") {
-    player.shield = true;
-    player.shieldTime = 240;
+    activateShield();
   }
 
   consumeWeapon();
+}
+
+function shootRocket(angle) {
+  const mesh = new THREE.Mesh(
+    new THREE.SphereGeometry(0.35, 16, 16),
+    new THREE.MeshStandardMaterial({
+      color: 0xff0000,
+      emissive: 0xaa0000
+    })
+  );
+
+  mesh.position.copy(player.position);
+  mesh.position.y = 1;
+
+  scene.add(mesh);
+
+  rockets.push({
+    mesh,
+    angle,
+    speed: 0.45,
+    damage: 45 * weaponDamageBoost
+  });
+}
+
+function dropMines() {
+  for (let i = 0; i < 4; i++) {
+    const mesh = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.65, 0.65, 0.25, 20),
+      new THREE.MeshStandardMaterial({
+        color: 0x111111,
+        emissive: 0x330000
+      })
+    );
+
+    const back = new THREE.Vector3(
+      Math.sin(player.rotation.y),
+      0,
+      Math.cos(player.rotation.y)
+    );
+
+    mesh.position.copy(player.position);
+    mesh.position.add(back.multiplyScalar(2.8 + i * 1.5));
+    mesh.position.y = 0.2;
+
+    scene.add(mesh);
+
+    mines.push({
+      mesh,
+      damage: 55 * weaponDamageBoost
+    });
+  }
+}
+
+function shootRifle() {
+  const angle = getNearestEnemyAngle();
+
+  for (let i = -1.5; i <= 1.5; i++) {
+    const mesh = new THREE.Mesh(
+      new THREE.SphereGeometry(0.18, 12, 12),
+      new THREE.MeshStandardMaterial({
+        color: 0xffff00,
+        emissive: 0x999900
+      })
+    );
+
+    mesh.position.copy(player.position);
+    mesh.position.y = 1;
+
+    scene.add(mesh);
+
+    bullets.push({
+      mesh,
+      angle: angle + i * 0.035,
+      speed: 0.65,
+      damage: 20 * weaponDamageBoost
+    });
+  }
+}
+
+function activateShield() {
+  shieldActive = true;
+  shieldTime = 300;
+
+  if (shieldMesh) scene.remove(shieldMesh);
+
+  const geometry = new THREE.TorusGeometry(2.1, 0.08, 12, 36, Math.PI);
+  const material = new THREE.MeshStandardMaterial({
+    color: 0x78e6ff,
+    emissive: 0x0088aa,
+    transparent: true,
+    opacity: 0.75
+  });
+
+  shieldMesh = new THREE.Mesh(geometry, material);
+  scene.add(shieldMesh);
 }
 
 function useFlamethrower() {
@@ -371,197 +663,247 @@ function useFlamethrower() {
   const holdTime = Math.min(5, (performance.now() - flameChargeStart) / 1000);
   flameChargeSeconds = 0;
 
-  const range = 80 + holdTime * 70;
-  const width = 35 + holdTime * 10;
-  const damage = (30 + holdTime * 12) * weaponDamageBoost;
+  const range = 5 + holdTime * 4;
+  const width = 2.2 + holdTime * 0.6;
+  const damage = (35 + holdTime * 15) * weaponDamageBoost;
 
-  flameBlasts.push({
-    x: player.x,
-    y: player.y,
-    angle: player.angle,
-    range: range,
-    width: width,
-    damage: damage,
-    life: 18
+  const flameGeometry = new THREE.ConeGeometry(width, range, 24, 1, true);
+  const flameMaterial = new THREE.MeshStandardMaterial({
+    color: 0xff6600,
+    emissive: 0xff3300,
+    transparent: true,
+    opacity: 0.55
   });
 
+  const flame = new THREE.Mesh(flameGeometry, flameMaterial);
+  flame.rotation.x = Math.PI / 2;
+  flame.rotation.z = player.rotation.y;
+  flame.position.copy(player.position);
+
+  const forward = getForwardVector(player.rotation.y);
+  flame.position.add(forward.multiplyScalar(range / 2 + 1));
+  flame.position.y = 1;
+
+  scene.add(flame);
+
+  flameEffects.push(flame);
+
+  setTimeout(() => {
+    scene.remove(flame);
+    flameEffects = flameEffects.filter(f => f !== flame);
+  }, 350);
+
   enemies.forEach(enemy => {
-    if (enemyInsideFlame(enemy, player.x, player.y, player.angle, range, width)) {
-      enemy.health -= damage;
+    if (enemyInsideFlame(enemy, range, width)) {
+      enemy.userData.health -= damage;
     }
   });
 
   consumeWeapon();
 }
 
+function enemyInsideFlame(enemy, range, width) {
+  const dx = enemy.position.x - player.position.x;
+  const dz = enemy.position.z - player.position.z;
+
+  const forward = getForwardVector(player.rotation.y);
+
+  const forwardDistance = dx * forward.x + dz * forward.z;
+  const sideDistance = Math.abs(dx * forward.z - dz * forward.x);
+
+  return forwardDistance > 0 && forwardDistance < range && sideDistance < width;
+}
+
 function consumeWeapon() {
   currentWeapon = null;
-  weaponText.textContent = "Empty";
+  updateUI();
+}
 
-  setTimeout(() => {
-    if (gameState === "playing") {
-      currentWeapon = weapons[Math.floor(Math.random() * weapons.length)];
+function updateWeaponBoxes() {
+  weaponBoxes.forEach(box => {
+    box.rotation.y += box.userData.spin;
+    box.position.y = 1.1 + Math.sin(performance.now() * 0.004 + box.position.x) * 0.25;
+
+    if (player && distance2D(player.position, box.position) < 2.8) {
+      currentWeapon = box.userData.type;
+
+      scene.remove(box);
+      weaponBoxes = weaponBoxes.filter(b => b !== box);
+
+      createWeaponBox(randomBetween(-38, 38), randomBetween(-38, 38));
       updateUI();
     }
-  }, 2500);
-}
-
-function getNearestEnemyAngle() {
-  if (enemies.length === 0) return player.angle;
-
-  let nearest = enemies[0];
-  let nearestDistance = distance(player.x, player.y, nearest.x, nearest.y);
-
-  enemies.forEach(enemy => {
-    const d = distance(player.x, player.y, enemy.x, enemy.y);
-    if (d < nearestDistance) {
-      nearest = enemy;
-      nearestDistance = d;
-    }
   });
-
-  return Math.atan2(nearest.y - player.y, nearest.x - player.x);
-}
-
-function enemyInsideFlame(enemy, x, y, angle, range, width) {
-  const dx = enemy.x - x;
-  const dy = enemy.y - y;
-
-  const forward = dx * Math.cos(angle) + dy * Math.sin(angle);
-  const side = Math.abs(-dx * Math.sin(angle) + dy * Math.cos(angle));
-
-  return forward > 0 && forward < range && side < width;
-}
-
-function updateFlameCharge() {
-  if (flameCharging) {
-    flameChargeSeconds = Math.min(5, (performance.now() - flameChargeStart) / 1000);
-  }
-}
-
-function updateProjectiles() {
-  bullets.forEach(b => {
-    b.x += Math.cos(b.angle) * b.speed;
-    b.y += Math.sin(b.angle) * b.speed;
-  });
-
-  rockets.forEach(r => {
-    r.x += Math.cos(r.angle) * r.speed;
-    r.y += Math.sin(r.angle) * r.speed;
-  });
-
-  enemyBullets.forEach(b => {
-    b.x += Math.cos(b.angle) * b.speed;
-    b.y += Math.sin(b.angle) * b.speed;
-  });
-
-  flameBlasts.forEach(f => f.life--);
-
-  bullets = bullets.filter(b => b.x > 0 && b.x < canvas.width && b.y > 0 && b.y < canvas.height);
-  rockets = rockets.filter(r => r.x > 0 && r.x < canvas.width && r.y > 0 && r.y < canvas.height);
-  enemyBullets = enemyBullets.filter(b => b.x > 0 && b.x < canvas.width && b.y > 0 && b.y < canvas.height);
-  flameBlasts = flameBlasts.filter(f => f.life > 0);
 }
 
 function updateEnemies() {
   enemies.forEach(enemy => {
-    const angleToPlayer = Math.atan2(player.y - enemy.y, player.x - enemy.x);
-    enemy.angle = angleToPlayer;
+    const dx = player.position.x - enemy.position.x;
+    const dz = player.position.z - enemy.position.z;
 
-    const d = distance(enemy.x, enemy.y, player.x, player.y);
+    const angleToPlayer = Math.atan2(-dx, -dz);
+    enemy.rotation.y = angleToPlayer;
 
-    if (d > 220) {
-      enemy.x += Math.cos(enemy.angle) * enemy.speed;
-      enemy.y += Math.sin(enemy.angle) * enemy.speed;
-    } else if (d < 140) {
-      enemy.x -= Math.cos(enemy.angle) * enemy.speed;
-      enemy.y -= Math.sin(enemy.angle) * enemy.speed;
+    const d = distance2D(enemy.position, player.position);
+    const forward = getForwardVector(enemy.rotation.y);
+
+    if (d > 12) {
+      enemy.position.add(forward.multiplyScalar(enemy.userData.speed));
+    } else if (d < 7) {
+      enemy.position.add(forward.multiplyScalar(-enemy.userData.speed));
     }
 
-    enemy.x = Math.max(25, Math.min(canvas.width - 25, enemy.x));
-    enemy.y = Math.max(25, Math.min(canvas.height - 25, enemy.y));
+    enemy.position.x = clamp(enemy.position.x, -42, 42);
+    enemy.position.z = clamp(enemy.position.z, -42, 42);
 
-    enemy.shootCooldown--;
+    enemy.userData.shootCooldown--;
 
-    if (enemy.shootCooldown <= 0) {
+    if (enemy.userData.shootCooldown <= 0) {
       enemyShoot(enemy);
-      enemy.shootCooldown = Math.max(45, 150 - currentLevel * 12);
+      enemy.userData.shootCooldown = Math.max(45, 150 - currentLevel * 10);
     }
   });
 }
 
 function enemyShoot(enemy) {
-  const angleToPlayer = Math.atan2(player.y - enemy.y, player.x - enemy.x);
+  const dx = player.position.x - enemy.position.x;
+  const dz = player.position.z - enemy.position.z;
+  const angle = Math.atan2(-dx, -dz);
+
+  const mesh = new THREE.Mesh(
+    new THREE.SphereGeometry(0.22, 12, 12),
+    new THREE.MeshStandardMaterial({
+      color: 0xff66ff,
+      emissive: 0xaa00aa
+    })
+  );
+
+  mesh.position.copy(enemy.position);
+  mesh.position.y = 1;
+
+  scene.add(mesh);
 
   enemyBullets.push({
-    x: enemy.x,
-    y: enemy.y,
-    angle: angleToPlayer,
-    speed: 4 + currentLevel * 0.2,
+    mesh,
+    angle,
+    speed: 0.35 + currentLevel * 0.02,
     damage: 10 + currentLevel * 2
   });
 }
 
-function checkHits() {
-  enemies.forEach(enemy => {
-    bullets.forEach(b => {
-      if (distance(b.x, b.y, enemy.x, enemy.y) < 25) {
-        enemy.health -= b.damage;
-        b.x = -999;
+function updateProjectiles() {
+  updateProjectileArray(bullets, false);
+  updateProjectileArray(rockets, false);
+  updateProjectileArray(enemyBullets, true);
+}
+
+function updateProjectileArray(array, isEnemyBullet) {
+  for (let i = array.length - 1; i >= 0; i--) {
+    const item = array[i];
+    const forward = getForwardVector(item.angle);
+
+    item.mesh.position.add(forward.multiplyScalar(item.speed));
+
+    if (
+      Math.abs(item.mesh.position.x) > 46 ||
+      Math.abs(item.mesh.position.z) > 46
+    ) {
+      scene.remove(item.mesh);
+      array.splice(i, 1);
+      continue;
+    }
+
+    if (isEnemyBullet) {
+      if (player && distance2D(item.mesh.position, player.position) < 1.5) {
+        if (!shieldActive) {
+          playerHealth -= item.damage;
+        }
+
+        scene.remove(item.mesh);
+        array.splice(i, 1);
       }
-    });
+    } else {
+      for (let e = enemies.length - 1; e >= 0; e--) {
+        const enemy = enemies[e];
 
-    rockets.forEach(r => {
-      if (distance(r.x, r.y, enemy.x, enemy.y) < 32) {
-        enemy.health -= r.damage;
-        r.x = -999;
+        if (distance2D(item.mesh.position, enemy.position) < 1.5) {
+          enemy.userData.health -= item.damage;
+
+          scene.remove(item.mesh);
+          array.splice(i, 1);
+          break;
+        }
       }
-    });
+    }
+  }
+}
 
-    mines.forEach(m => {
-      if (distance(m.x, m.y, enemy.x, enemy.y) < 32) {
-        enemy.health -= m.damage;
-        m.x = -999;
+function updateMines() {
+  for (let i = mines.length - 1; i >= 0; i--) {
+    const mine = mines[i];
+
+    for (let e = enemies.length - 1; e >= 0; e--) {
+      const enemy = enemies[e];
+
+      if (distance2D(mine.mesh.position, enemy.position) < 1.8) {
+        enemy.userData.health -= mine.damage;
+
+        scene.remove(mine.mesh);
+        mines.splice(i, 1);
+        break;
       }
-    });
-  });
+    }
+  }
+}
 
-  const beforeCount = enemies.length;
-  enemies = enemies.filter(e => e.health > 0);
-  const killedEnemies = beforeCount - enemies.length;
+function updateShield() {
+  if (!shieldActive || !shieldMesh || !player) return;
 
-  if (killedEnemies > 0) {
-    gainXP(killedEnemies);
+  shieldTime--;
+
+  shieldMesh.position.copy(player.position);
+  shieldMesh.position.y = 1.1;
+  shieldMesh.rotation.x = Math.PI / 2;
+  shieldMesh.rotation.z = player.rotation.y;
+
+  if (shieldTime <= 0) {
+    shieldActive = false;
+    scene.remove(shieldMesh);
+    shieldMesh = null;
+  }
+}
+
+function checkDeaths() {
+  const before = enemies.length;
+
+  for (let i = enemies.length - 1; i >= 0; i--) {
+    const enemy = enemies[i];
+
+    if (enemy.userData.health <= 0) {
+      scene.remove(enemy);
+      enemies.splice(i, 1);
+    }
   }
 
-  mines = mines.filter(m => m.x > 0);
-  bullets = bullets.filter(b => b.x > 0);
-  rockets = rockets.filter(r => r.x > 0);
+  const killed = before - enemies.length;
 
-  enemyBullets.forEach(b => {
-    if (distance(b.x, b.y, player.x, player.y) < 25) {
-      if (!player.shield) {
-        player.health -= b.damage;
-      }
-      b.x = -999;
-    }
-  });
+  if (killed > 0) {
+    gainXP(killed);
+  }
 
-  enemyBullets = enemyBullets.filter(b => b.x > 0);
-
-  if (player.health <= 0 && gameState === "playing") {
-    player.health = 0;
+  if (playerHealth <= 0 && gameState === "playing") {
+    playerHealth = 0;
     updateUI();
 
     setTimeout(() => {
       returnHome("Failed! Try again.");
-    }, 500);
+    }, 600);
   }
 
   if (enemies.length === 0 && gameState === "playing") {
     setTimeout(() => {
       returnHome("You destroyed all enemies!");
-    }, 800);
+    }, 700);
   }
 }
 
@@ -584,12 +926,56 @@ function showLevelUp() {
   }, 1200);
 }
 
+function returnHome(text) {
+  gameState = "home";
+  homeScreen.style.display = "flex";
+  hud.style.display = "none";
+  message.textContent = text;
+  updateUI();
+}
+
+function updateFlameCharge() {
+  if (flameCharging) {
+    flameChargeSeconds = Math.min(5, (performance.now() - flameChargeStart) / 1000);
+  }
+}
+
+function drawFlamePreview() {
+  if (!flameCharging || !player) return;
+
+  const range = 5 + flameChargeSeconds * 4;
+  const width = 2.2 + flameChargeSeconds * 0.6;
+
+  const geometry = new THREE.ConeGeometry(width, range, 24, 1, true);
+  const material = new THREE.MeshBasicMaterial({
+    color: 0xffaa00,
+    transparent: true,
+    opacity: 0.18,
+    wireframe: true
+  });
+
+  const preview = new THREE.Mesh(geometry, material);
+  preview.rotation.x = Math.PI / 2;
+  preview.rotation.z = player.rotation.y;
+
+  const forward = getForwardVector(player.rotation.y);
+  preview.position.copy(player.position);
+  preview.position.add(forward.multiplyScalar(range / 2 + 1));
+  preview.position.y = 1.05;
+
+  scene.add(preview);
+
+  setTimeout(() => {
+    scene.remove(preview);
+  }, 30);
+}
+
 function updateUI() {
-  healthText.textContent = Math.max(0, Math.floor(player.health));
+  healthText.textContent = Math.max(0, Math.floor(playerHealth));
   levelText.textContent = currentLevel;
   xpText.textContent = xp;
   xpNeededText.textContent = xpNeeded;
-  weaponText.textContent = currentWeapon ? currentWeapon : "Empty";
+  weaponText.textContent = currentWeapon ? currentWeapon : "Empty - collect box";
   chargeText.textContent = flameCharging ? flameChargeSeconds.toFixed(1) : "0";
   enemyText.textContent = enemies.length;
 
@@ -598,161 +984,74 @@ function updateUI() {
   homeXpNeededText.textContent = xpNeeded;
 }
 
-function distance(x1, y1, x2, y2) {
-  return Math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2);
-}
+function getNearestEnemyAngle() {
+  if (enemies.length === 0) return player.rotation.y;
 
-function drawCar(car, color) {
-  ctx.save();
-  ctx.translate(car.x, car.y);
-  ctx.rotate(car.angle);
+  let nearest = enemies[0];
+  let nearestDistance = distance2D(player.position, nearest.position);
 
-  ctx.fillStyle = color;
-  ctx.fillRect(-car.width / 2, -car.height / 2, car.width, car.height);
+  enemies.forEach(enemy => {
+    const d = distance2D(player.position, enemy.position);
 
-  ctx.fillStyle = "black";
-  ctx.fillRect(5, -8, 15, 16);
-
-  ctx.restore();
-
-  ctx.fillStyle = "red";
-  ctx.fillRect(car.x - 25, car.y - 35, 50, 6);
-
-  ctx.fillStyle = "lime";
-  const maxHp = car.maxHealth || 100;
-  const healthPercent = Math.max(0, car.health / maxHp);
-  ctx.fillRect(car.x - 25, car.y - 35, 50 * Math.min(1, healthPercent), 6);
-}
-
-function drawShield() {
-  if (!player.shield) return;
-
-  ctx.save();
-  ctx.translate(player.x, player.y);
-  ctx.rotate(player.angle);
-
-  ctx.strokeStyle = "rgba(100, 220, 255, 0.9)";
-  ctx.lineWidth = 6;
-  ctx.beginPath();
-  ctx.arc(0, 0, 45, -Math.PI / 2, Math.PI / 2);
-  ctx.stroke();
-
-  ctx.restore();
-
-  player.shieldTime--;
-
-  if (player.shieldTime <= 0) {
-    player.shield = false;
-  }
-}
-
-function drawFlameBlasts() {
-  flameBlasts.forEach(f => {
-    ctx.save();
-    ctx.translate(f.x, f.y);
-    ctx.rotate(f.angle);
-
-    ctx.fillStyle = "rgba(255, 120, 0, 0.35)";
-    ctx.beginPath();
-    ctx.moveTo(20, 0);
-    ctx.lineTo(f.range, -f.width);
-    ctx.lineTo(f.range, f.width);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.fillStyle = "rgba(255, 220, 0, 0.45)";
-    ctx.beginPath();
-    ctx.moveTo(20, 0);
-    ctx.lineTo(f.range * 0.8, -f.width * 0.5);
-    ctx.lineTo(f.range * 0.8, f.width * 0.5);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.restore();
-  });
-}
-
-function drawChargePreview() {
-  if (!flameCharging) return;
-
-  const range = 80 + flameChargeSeconds * 70;
-  const width = 35 + flameChargeSeconds * 10;
-
-  ctx.save();
-  ctx.translate(player.x, player.y);
-  ctx.rotate(player.angle);
-
-  ctx.strokeStyle = "rgba(255, 160, 0, 0.7)";
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.moveTo(20, 0);
-  ctx.lineTo(range, -width);
-  ctx.lineTo(range, width);
-  ctx.closePath();
-  ctx.stroke();
-
-  ctx.restore();
-}
-
-function draw() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  if (gameState !== "playing") return;
-
-  drawFlameBlasts();
-  drawChargePreview();
-
-  drawCar(player, "#00bfff");
-  drawShield();
-
-  enemies.forEach(enemy => drawCar(enemy, "orange"));
-
-  ctx.fillStyle = "yellow";
-  bullets.forEach(b => {
-    ctx.beginPath();
-    ctx.arc(b.x, b.y, 4, 0, Math.PI * 2);
-    ctx.fill();
+    if (d < nearestDistance) {
+      nearest = enemy;
+      nearestDistance = d;
+    }
   });
 
-  ctx.fillStyle = "red";
-  rockets.forEach(r => {
-    ctx.beginPath();
-    ctx.arc(r.x, r.y, 8, 0, Math.PI * 2);
-    ctx.fill();
-  });
+  const dx = nearest.position.x - player.position.x;
+  const dz = nearest.position.z - player.position.z;
 
-  ctx.fillStyle = "black";
-  mines.forEach(m => {
-    ctx.beginPath();
-    ctx.arc(m.x, m.y, m.radius, 0, Math.PI * 2);
-    ctx.fill();
-  });
-
-  ctx.fillStyle = "#ff66ff";
-  enemyBullets.forEach(b => {
-    ctx.beginPath();
-    ctx.arc(b.x, b.y, 5, 0, Math.PI * 2);
-    ctx.fill();
-  });
-
-  updateUI();
+  return Math.atan2(-dx, -dz);
 }
 
-function gameLoop() {
+function getForwardVector(angle) {
+  return new THREE.Vector3(
+    -Math.sin(angle),
+    0,
+    -Math.cos(angle)
+  );
+}
+
+function distance2D(a, b) {
+  const dx = a.x - b.x;
+  const dz = a.z - b.z;
+  return Math.sqrt(dx * dx + dz * dz);
+}
+
+function randomBetween(min, max) {
+  return Math.random() * (max - min) + min;
+}
+
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function onResize() {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+
   if (gameState === "playing") {
     updateFlameCharge();
     movePlayer();
-    updateProjectiles();
+    updateCamera();
     updateEnemies();
-    checkHits();
+    updateProjectiles();
+    updateMines();
+    updateWeaponBoxes();
+    updateShield();
+    drawFlamePreview();
+    checkDeaths();
+    updateUI();
   }
 
-  draw();
-  requestAnimationFrame(gameLoop);
+  renderer.render(scene, camera);
 }
-
-updateUI();
-gameLoop();
 </script>
 
 </body>
