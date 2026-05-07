@@ -366,7 +366,7 @@
 
     <div class="newsBox">
       <h3>News</h3>
-      <div class="newsItem">🔥 New Junkyard Arena</div>
+      <div class="newsItem">🔥 New arenas added</div>
       <div class="newsItem">🚗 3D cars added</div>
       <div class="newsItem">🎁 Weapon boxes are live</div>
     </div>
@@ -674,12 +674,15 @@ function loadProgress() {
 
 function resetProgress() {
   localStorage.removeItem("carDestroySaveData");
+  localStorage.clear();
 
   playerDisplayName = "Player";
   selectedArena = "Junkyard";
+
   currentLevel = 1;
   xp = 0;
   xpNeeded = 5;
+
   parts = 0;
   coins = 0;
   gems = 0;
@@ -696,13 +699,22 @@ function resetProgress() {
 
   customPanel.style.display = "none";
   arenaMenu.style.display = "none";
-  message.textContent = "Save reset!";
+
+  if (gameState === "playing") {
+    clearGameObjects();
+  }
+
+  gameState = "home";
+  homeScreen.style.display = "block";
+  hud.style.display = "none";
+
+  message.textContent = "Progress deleted!";
 
   setTimeout(() => {
     if (gameState === "home") {
       message.textContent = "";
     }
-  }, 1200);
+  }, 1500);
 
   updateUI();
 }
