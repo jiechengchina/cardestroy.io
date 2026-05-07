@@ -32,7 +32,7 @@
       background: rgba(0,0,0,0.55);
       padding: 40px;
       border-radius: 22px;
-      width: 580px;
+      width: 600px;
       box-shadow: 0 0 35px rgba(0,0,0,0.6);
     }
 
@@ -92,6 +92,13 @@
       z-index: 5;
     }
 
+    #cameraButton {
+      font-size: 16px;
+      padding: 6px 12px;
+      margin-top: 6px;
+      border-radius: 8px;
+    }
+
     #levelMessage {
       position: fixed;
       top: 42%;
@@ -120,7 +127,8 @@
 
     <div id="homeStats">
       Current Level: <span id="homeLevelText">1</span><br>
-      XP: <span id="homeXpText">0</span> / <span id="homeXpNeededText">5</span>
+      XP: <span id="homeXpText">0</span> / <span id="homeXpNeededText">5</span><br>
+      Mode: <span id="homeModeText">Solo Battle</span>
     </div>
 
     <button onclick="startGame()">Start Game</button>
@@ -129,7 +137,7 @@
       Move: WASD / Arrow Keys<br>
       Use Weapon: SPACE<br>
       Change Camera: C<br>
-      Flamethrower: Hold SPACE, then release
+      Flamethrower: Press SPACE to shoot fire
     </p>
   </div>
 </div>
@@ -140,9 +148,9 @@
   Current Level: <span id="levelText">1</span><br>
   XP: <span id="xpText">0</span> / <span id="xpNeededText">5</span><br>
   Weapon: <span id="weaponText">Flamethrower</span><br>
-  Charge: <span id="chargeText">0</span>s<br>
   Enemies Left: <span id="enemyText">0</span><br>
-  Camera: <span id="cameraText">Follow</span> — Press C
+  Camera: <span id="cameraText">Smash View</span><br>
+  <button id="cameraButton">Change Camera</button>
 </div>
 
 <div id="levelMessage">LEVEL UP!</div>
@@ -164,23 +172,25 @@ const levelText = document.getElementById("levelText");
 const xpText = document.getElementById("xpText");
 const xpNeededText = document.getElementById("xpNeededText");
 const weaponText = document.getElementById("weaponText");
-const chargeText = document.getElementById("chargeText");
 const enemyText = document.getElementById("enemyText");
 const cameraText = document.getElementById("cameraText");
+const cameraButton = document.getElementById("cameraButton");
 
 const homeLevelText = document.getElementById("homeLevelText");
 const homeXpText = document.getElementById("homeXpText");
 const homeXpNeededText = document.getElementById("homeXpNeededText");
+const homeModeText = document.getElementById("homeModeText");
 
 let scene, camera, renderer;
 let player;
+
 let enemies = [];
 let bullets = [];
 let rockets = [];
 let mines = [];
 let enemyBullets = [];
 let weaponBoxes = [];
-let flameEffects = [];
+let fireParticles = [];
 
 let gameState = "home";
 let keys = {};
@@ -192,15 +202,11 @@ let xpNeeded = 5;
 let currentWeapon = "Flamethrower";
 const weapons = ["Rocket", "Mine", "Flamethrower", "Shield", "Rifle"];
 
-let spaceHeld = false;
-let flameCharging = false;
-let flameChargeStart = 0;
-let flameChargeSeconds = 0;
-
 let playerHealth = 100;
 let playerMaxHealth = 100;
 let playerSpeed = 0.16;
 let weaponDamageBoost = 1;
+
 let shieldActive = false;
 let shieldTime = 0;
 let shieldMesh = null;
@@ -210,6 +216,8 @@ let cameraMode = 1;
 init3D();
 updateUI();
 animate();
+
+cameraButton.addEventListener("click", changeCameraMode);
 
 function init3D() {
   scene = new THREE.Scene();
@@ -240,13 +248,13 @@ function init3D() {
   sun.castShadow = true;
   scene.add(sun);
 
-  const groundGeometry = new THREE.PlaneGeometry(90, 90);
-  const groundMaterial = new THREE.MeshStandardMaterial({
-    color: 0x2d3436,
-    roughness: 0.9
-  });
-
-  const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+  const ground = new THREE.Mesh(
+    new THREE.PlaneGeometry(90, 90),
+    new THREE.MeshStandardMaterial({
+      color: 0x2d3436,
+      roughness: 0.9
+    })
+  );
   ground.rotation.x = -Math.PI / 2;
   ground.receiveShadow = true;
   scene.add(ground);
@@ -258,45 +266,24 @@ function init3D() {
 
   window.addEventListener("resize", onResize);
 
-  window.addEventListener("keydown", e => {
+  document.addEventListener("keydown", e => {
     keys[e.key.toLowerCase()] = true;
 
     if (e.key.toLowerCase() === "c" && gameState === "playing") {
-      cameraMode++;
-      if (cameraMode > 4) cameraMode = 1;
-      updateUI();
+      changeCameraMode();
     }
 
     if (e.code === "Space" && gameState === "playing") {
       e.preventDefault();
 
-      if (spaceHeld) return;
-      spaceHeld = true;
-
-      if (currentWeapon === "Flamethrower") {
-        flameCharging = true;
-        flameChargeStart = performance.now();
-        flameChargeSeconds = 0;
-      } else {
+      if (!e.repeat) {
         useWeapon();
       }
     }
   });
 
-  window.addEventListener("keyup", e => {
+  document.addEventListener("keyup", e => {
     keys[e.key.toLowerCase()] = false;
-
-    if (e.code === "Space") {
-      spaceHeld = false;
-
-      if (
-        gameState === "playing" &&
-        currentWeapon === "Flamethrower" &&
-        flameCharging
-      ) {
-        useFlamethrower();
-      }
-    }
   });
 }
 
@@ -339,12 +326,15 @@ function createCar(color) {
   cabin.castShadow = true;
   group.add(cabin);
 
-  const front = new THREE.Mesh(
+  const frontLight = new THREE.Mesh(
     new THREE.BoxGeometry(1.2, 0.2, 0.25),
-    new THREE.MeshStandardMaterial({ color: 0xffffff })
+    new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      emissive: 0x222222
+    })
   );
-  front.position.set(0, 0.95, -2.05);
-  group.add(front);
+  frontLight.position.set(0, 0.95, -2.05);
+  group.add(frontLight);
 
   const wheelMaterial = new THREE.MeshStandardMaterial({ color: 0x050505 });
 
@@ -387,12 +377,21 @@ function createWeaponBox(x, z) {
       roughness: 0.35
     })
   );
-
   box.castShadow = true;
   group.add(box);
 
+  const top = new THREE.Mesh(
+    new THREE.BoxGeometry(2.25, 0.25, 2.25),
+    new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      emissive: 0x222222
+    })
+  );
+  top.position.y = 1.1;
+  group.add(top);
+
   const label = createTextSprite("WEAPON");
-  label.position.set(0, 2.1, 0);
+  label.position.set(0, 2.3, 0);
   group.add(label);
 
   group.position.set(x, 1.1, z);
@@ -444,9 +443,6 @@ function startGame() {
 
   shieldActive = false;
   shieldTime = 0;
-  flameCharging = false;
-  flameChargeSeconds = 0;
-  spaceHeld = false;
   cameraMode = 1;
 
   player = createCar(0x00bfff);
@@ -471,7 +467,7 @@ function clearGameObjects() {
     ...mines.map(m => m.mesh),
     ...enemyBullets.map(b => b.mesh),
     ...weaponBoxes,
-    ...flameEffects
+    ...fireParticles.map(f => f.mesh)
   ];
 
   allObjects.forEach(obj => {
@@ -484,7 +480,7 @@ function clearGameObjects() {
   mines = [];
   enemyBullets = [];
   weaponBoxes = [];
-  flameEffects = [];
+  fireParticles = [];
 
   if (shieldMesh) {
     scene.remove(shieldMesh);
@@ -543,6 +539,15 @@ function movePlayer() {
   player.position.z = clamp(player.position.z, -42, 42);
 }
 
+function changeCameraMode() {
+  if (gameState !== "playing") return;
+
+  cameraMode++;
+  if (cameraMode > 4) cameraMode = 1;
+
+  updateUI();
+}
+
 function updateCamera() {
   if (!player) return;
 
@@ -550,47 +555,47 @@ function updateCamera() {
 
   if (cameraMode === 1) {
     const behind = new THREE.Vector3(
-      Math.sin(player.rotation.y) * 9,
-      6,
-      Math.cos(player.rotation.y) * 9
+      Math.sin(player.rotation.y) * 11,
+      7,
+      Math.cos(player.rotation.y) * 11
     );
 
     targetPosition = player.position.clone().add(behind);
-    camera.position.lerp(targetPosition, 0.08);
-    camera.lookAt(player.position.x, player.position.y + 1.2, player.position.z);
+    camera.position.lerp(targetPosition, 0.12);
+    camera.lookAt(player.position.x, player.position.y + 1.4, player.position.z);
   }
 
   if (cameraMode === 2) {
     targetPosition = new THREE.Vector3(
       player.position.x,
-      32,
+      36,
       player.position.z + 0.1
     );
 
-    camera.position.lerp(targetPosition, 0.08);
+    camera.position.lerp(targetPosition, 0.12);
     camera.lookAt(player.position.x, player.position.y, player.position.z);
   }
 
   if (cameraMode === 3) {
     const closeBehind = new THREE.Vector3(
-      Math.sin(player.rotation.y) * 5,
-      3.2,
-      Math.cos(player.rotation.y) * 5
+      Math.sin(player.rotation.y) * 6,
+      3.8,
+      Math.cos(player.rotation.y) * 6
     );
 
     targetPosition = player.position.clone().add(closeBehind);
-    camera.position.lerp(targetPosition, 0.12);
-    camera.lookAt(player.position.x, player.position.y + 1.1, player.position.z);
+    camera.position.lerp(targetPosition, 0.16);
+    camera.lookAt(player.position.x, player.position.y + 1.2, player.position.z);
   }
 
   if (cameraMode === 4) {
     targetPosition = new THREE.Vector3(
-      player.position.x + 13,
-      18,
-      player.position.z + 13
+      player.position.x + 16,
+      20,
+      player.position.z + 16
     );
 
-    camera.position.lerp(targetPosition, 0.06);
+    camera.position.lerp(targetPosition, 0.10);
     camera.lookAt(player.position.x, player.position.y, player.position.z);
   }
 }
@@ -614,6 +619,10 @@ function useWeapon() {
 
   if (currentWeapon === "Shield") {
     activateShield();
+  }
+
+  if (currentWeapon === "Flamethrower") {
+    shootFire();
   }
 
   consumeWeapon();
@@ -714,62 +723,36 @@ function activateShield() {
   scene.add(shieldMesh);
 }
 
-function useFlamethrower() {
-  if (!currentWeapon || currentWeapon !== "Flamethrower") return;
+function shootFire() {
+  const fireCount = 18;
 
-  flameCharging = false;
+  for (let i = 0; i < fireCount; i++) {
+    const fire = new THREE.Mesh(
+      new THREE.SphereGeometry(0.32 + Math.random() * 0.25, 12, 12),
+      new THREE.MeshStandardMaterial({
+        color: 0xff6600,
+        emissive: 0xff2200,
+        transparent: true,
+        opacity: 0.85
+      })
+    );
 
-  const holdTime = Math.min(5, (performance.now() - flameChargeStart) / 1000);
-  flameChargeSeconds = 0;
+    fire.position.copy(player.position);
+    fire.position.y = 1;
 
-  const range = 5 + holdTime * 4;
-  const width = 2.2 + holdTime * 0.6;
-  const damage = (35 + holdTime * 15) * weaponDamageBoost;
+    const spread = (Math.random() - 0.5) * 0.55;
+    const angle = player.rotation.y + spread;
 
-  const flameGeometry = new THREE.ConeGeometry(width, range, 24, 1, true);
-  const flameMaterial = new THREE.MeshStandardMaterial({
-    color: 0xff6600,
-    emissive: 0xff3300,
-    transparent: true,
-    opacity: 0.55
-  });
+    scene.add(fire);
 
-  const flame = new THREE.Mesh(flameGeometry, flameMaterial);
-  flame.rotation.x = Math.PI / 2;
-  flame.rotation.z = player.rotation.y;
-  flame.position.copy(player.position);
-
-  const forward = getForwardVector(player.rotation.y);
-  flame.position.add(forward.multiplyScalar(range / 2 + 1));
-  flame.position.y = 1;
-
-  scene.add(flame);
-  flameEffects.push(flame);
-
-  setTimeout(() => {
-    scene.remove(flame);
-    flameEffects = flameEffects.filter(f => f !== flame);
-  }, 350);
-
-  enemies.forEach(enemy => {
-    if (enemyInsideFlame(enemy, range, width)) {
-      enemy.userData.health -= damage;
-    }
-  });
-
-  consumeWeapon();
-}
-
-function enemyInsideFlame(enemy, range, width) {
-  const dx = enemy.position.x - player.position.x;
-  const dz = enemy.position.z - player.position.z;
-
-  const forward = getForwardVector(player.rotation.y);
-
-  const forwardDistance = dx * forward.x + dz * forward.z;
-  const sideDistance = Math.abs(dx * forward.z - dz * forward.x);
-
-  return forwardDistance > 0 && forwardDistance < range && sideDistance < width;
+    fireParticles.push({
+      mesh: fire,
+      angle,
+      speed: 0.35 + Math.random() * 0.2,
+      damage: 18 * weaponDamageBoost,
+      life: 45
+    });
+  }
 }
 
 function consumeWeapon() {
@@ -898,6 +881,38 @@ function updateProjectileArray(array, isEnemyBullet) {
   }
 }
 
+function updateFire() {
+  for (let i = fireParticles.length - 1; i >= 0; i--) {
+    const fire = fireParticles[i];
+    const forward = getForwardVector(fire.angle);
+
+    fire.mesh.position.add(forward.clone().multiplyScalar(fire.speed));
+    fire.life--;
+    fire.mesh.scale.multiplyScalar(0.985);
+
+    for (let e = enemies.length - 1; e >= 0; e--) {
+      const enemy = enemies[e];
+
+      if (distance2D(fire.mesh.position, enemy.position) < 1.7) {
+        enemy.userData.health -= fire.damage;
+
+        scene.remove(fire.mesh);
+        fireParticles.splice(i, 1);
+        break;
+      }
+    }
+
+    if (
+      fire.life <= 0 ||
+      Math.abs(fire.mesh.position.x) > 46 ||
+      Math.abs(fire.mesh.position.z) > 46
+    ) {
+      scene.remove(fire.mesh);
+      fireParticles.splice(i, 1);
+    }
+  }
+}
+
 function updateMines() {
   for (let i = mines.length - 1; i >= 0; i--) {
     const mine = mines[i];
@@ -994,59 +1009,23 @@ function returnHome(text) {
   updateUI();
 }
 
-function updateFlameCharge() {
-  if (flameCharging) {
-    flameChargeSeconds = Math.min(5, (performance.now() - flameChargeStart) / 1000);
-  }
-}
-
-function drawFlamePreview() {
-  if (!flameCharging || !player) return;
-
-  const range = 5 + flameChargeSeconds * 4;
-  const width = 2.2 + flameChargeSeconds * 0.6;
-
-  const geometry = new THREE.ConeGeometry(width, range, 24, 1, true);
-  const material = new THREE.MeshBasicMaterial({
-    color: 0xffaa00,
-    transparent: true,
-    opacity: 0.18,
-    wireframe: true
-  });
-
-  const preview = new THREE.Mesh(geometry, material);
-  preview.rotation.x = Math.PI / 2;
-  preview.rotation.z = player.rotation.y;
-
-  const forward = getForwardVector(player.rotation.y);
-  preview.position.copy(player.position);
-  preview.position.add(forward.multiplyScalar(range / 2 + 1));
-  preview.position.y = 1.05;
-
-  scene.add(preview);
-
-  setTimeout(() => {
-    scene.remove(preview);
-  }, 30);
-}
-
 function updateUI() {
   healthText.textContent = Math.max(0, Math.floor(playerHealth));
   levelText.textContent = currentLevel;
   xpText.textContent = xp;
   xpNeededText.textContent = xpNeeded;
   weaponText.textContent = currentWeapon ? currentWeapon : "Empty - collect box";
-  chargeText.textContent = flameCharging ? flameChargeSeconds.toFixed(1) : "0";
   enemyText.textContent = enemies.length;
 
-  if (cameraMode === 1) cameraText.textContent = "Follow";
-  if (cameraMode === 2) cameraText.textContent = "Top";
-  if (cameraMode === 3) cameraText.textContent = "Close";
-  if (cameraMode === 4) cameraText.textContent = "Arena";
+  if (cameraMode === 1) cameraText.textContent = "Smash View";
+  if (cameraMode === 2) cameraText.textContent = "Top View";
+  if (cameraMode === 3) cameraText.textContent = "Close View";
+  if (cameraMode === 4) cameraText.textContent = "Arena View";
 
   homeLevelText.textContent = currentLevel;
   homeXpText.textContent = xp;
   homeXpNeededText.textContent = xpNeeded;
+  homeModeText.textContent = "Solo Battle";
 }
 
 function getNearestEnemyAngle() {
@@ -1102,15 +1081,14 @@ function animate() {
   requestAnimationFrame(animate);
 
   if (gameState === "playing") {
-    updateFlameCharge();
     movePlayer();
     updateCamera();
     updateEnemies();
     updateProjectiles();
+    updateFire();
     updateMines();
     updateWeaponBoxes();
     updateShield();
-    drawFlamePreview();
     checkDeaths();
     updateUI();
   }
