@@ -1,12 +1,13 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>CarDestroy.io 3D</title>
+  <title>CarDestroy.io Online</title>
+
   <style>
     body {
       margin: 0;
       overflow: hidden;
-      background: #111;
+      background: #071b3a;
       font-family: Arial, sans-serif;
     }
 
@@ -19,80 +20,106 @@
     #homeScreen {
       position: fixed;
       inset: 0;
-      background:
-        linear-gradient(135deg, rgba(255,255,255,0.05) 25%, transparent 25%) 0 0 / 90px 90px,
-        linear-gradient(225deg, rgba(255,255,255,0.05) 25%, transparent 25%) 0 0 / 90px 90px,
-        radial-gradient(circle at center, #5aa9ff, #1d5fc5 60%, #12408e);
-      color: white;
       z-index: 10;
+      color: white;
       overflow: hidden;
+      background:
+        radial-gradient(circle at 50% 42%, rgba(255,255,255,0.22), transparent 22%),
+        linear-gradient(135deg, rgba(255,255,255,0.07) 25%, transparent 25%) 0 0 / 120px 120px,
+        linear-gradient(225deg, rgba(255,255,255,0.06) 25%, transparent 25%) 0 0 / 120px 120px,
+        linear-gradient(180deg, #3aa4ff 0%, #1470dc 48%, #0d3f9c 100%);
+    }
+
+    #homeScreen::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(255,255,255,0.18), transparent 18%),
+        radial-gradient(circle at 80% 18%, rgba(255,255,255,0.14), transparent 20%),
+        radial-gradient(circle at 70% 85%, rgba(0,0,0,0.18), transparent 25%);
+      pointer-events: none;
     }
 
     #topBar {
       position: absolute;
-      top: 10px;
-      left: 15px;
-      right: 15px;
-      height: 45px;
+      top: 12px;
+      left: 16px;
+      right: 16px;
+      height: 52px;
       display: flex;
       align-items: center;
       gap: 12px;
-      justify-content: flex-end;
+      z-index: 3;
     }
 
     .topBadge,
     .topButton {
-      background: linear-gradient(#66c9ff, #1c82d4);
-      border: 3px solid #9ee3ff;
-      border-radius: 12px;
-      padding: 8px 18px;
-      font-weight: bold;
+      background: linear-gradient(#67d4ff, #1087df);
+      border: 3px solid #a7edff;
+      border-radius: 14px;
+      padding: 9px 20px;
+      font-weight: 900;
       color: white;
-      box-shadow: 0 4px 0 rgba(0,0,0,0.25);
+      box-shadow: 0 5px 0 rgba(0,0,0,0.28);
+      text-shadow: 0 2px 0 rgba(0,0,0,0.25);
+      letter-spacing: 0.5px;
     }
 
     .topBadge:first-child {
       margin-right: auto;
     }
 
+    .topButton {
+      cursor: pointer;
+    }
+
     #leftPanel {
       position: absolute;
-      left: 22px;
-      top: 75px;
-      width: 220px;
+      left: 24px;
+      top: 86px;
+      width: 240px;
+      z-index: 3;
     }
 
-    .currencyBox,
-    .profileBox,
-    .newsBox {
-      background: rgba(0, 139, 255, 0.65);
-      border: 3px solid #8be0ff;
-      border-radius: 16px;
-      padding: 12px;
-      margin-bottom: 14px;
-      box-shadow: 0 5px 0 rgba(0,0,0,0.25);
+    .glassPanel {
+      background: rgba(0, 135, 255, 0.72);
+      border: 4px solid #83e4ff;
+      border-radius: 20px;
+      padding: 13px;
+      margin-bottom: 16px;
+      box-shadow:
+        0 7px 0 rgba(0,0,0,0.25),
+        inset 0 1px 0 rgba(255,255,255,0.25);
+      backdrop-filter: blur(4px);
     }
 
-    .currencyBox div {
-      background: rgba(255,255,255,0.2);
-      margin: 7px 0;
-      padding: 9px;
-      border-radius: 10px;
-      font-size: 17px;
+    .currencyItem {
+      background: rgba(255,255,255,0.20);
+      margin: 8px 0;
+      padding: 10px 12px;
+      border-radius: 12px;
+      font-size: 18px;
+      font-weight: 800;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
 
     .playerName {
       width: 100%;
-      background: #2aa7ff;
-      border-radius: 9px;
-      padding: 10px;
-      font-weight: bold;
-      margin-bottom: 8px;
-      font-size: 18px;
+      background: linear-gradient(#5bcaff, #198cdf);
+      border-radius: 12px;
+      padding: 12px;
+      font-weight: 900;
+      margin-bottom: 10px;
+      font-size: 19px;
       text-align: center;
       color: white;
-      border: none;
+      border: 3px solid rgba(255,255,255,0.35);
       box-sizing: border-box;
+      outline: none;
+      text-shadow: 0 2px 0 rgba(0,0,0,0.25);
     }
 
     .playerName::placeholder {
@@ -103,201 +130,228 @@
     .blueBtn,
     .redBtn {
       width: 100%;
-      margin-top: 8px;
-      font-size: 18px;
-      padding: 9px;
-      border-radius: 11px;
+      margin-top: 9px;
+      font-size: 20px;
+      padding: 11px;
+      border-radius: 14px;
       border: none;
       color: white;
-      font-weight: bold;
+      font-weight: 900;
       cursor: pointer;
+      box-shadow: 0 5px 0 rgba(0,0,0,0.25);
+      text-shadow: 0 2px 0 rgba(0,0,0,0.25);
     }
 
     .orangeBtn {
-      background: linear-gradient(#ffb13b, #ff7a00);
+      background: linear-gradient(#ffc449, #ff8200);
     }
 
     .blueBtn {
-      background: linear-gradient(#69c9ff, #1685df);
+      background: linear-gradient(#71d8ff, #1687df);
     }
 
     .redBtn {
-      background: linear-gradient(#ff6666, #cc0000);
+      background: linear-gradient(#ff6868, #d40000);
     }
 
     .newsBox h3 {
       margin: 0 0 8px;
+      font-size: 23px;
+      text-shadow: 0 2px 0 rgba(0,0,0,0.28);
     }
 
     .newsItem {
-      background: rgba(255,255,255,0.2);
-      padding: 8px;
-      border-radius: 8px;
-      margin: 7px 0;
-      font-size: 14px;
+      background: rgba(255,255,255,0.20);
+      padding: 9px;
+      border-radius: 10px;
+      margin: 8px 0;
+      font-size: 15px;
+      font-weight: 800;
     }
 
     #centerLobby {
       position: absolute;
       left: 50%;
       top: 50%;
-      transform: translate(-50%, -50%);
+      transform: translate(-50%, -48%);
       text-align: center;
+      z-index: 2;
+      width: 680px;
+      max-width: 60vw;
     }
 
     #gameLogo {
-      margin-bottom: 24px;
+      margin-bottom: 18px;
       text-align: center;
     }
 
     #logoImage {
-      width: 540px;
-      max-width: 80vw;
+      width: 560px;
+      max-width: 100%;
       height: auto;
-      filter: drop-shadow(0 8px 12px rgba(0,0,0,0.45));
-      border-radius: 16px;
+      filter: drop-shadow(0 14px 18px rgba(0,0,0,0.50));
+      border-radius: 18px;
     }
 
     #homeStats {
-      font-size: 22px;
-      font-weight: bold;
+      font-size: 23px;
+      font-weight: 900;
       color: white;
-      background: rgba(0,0,0,0.25);
-      border-radius: 15px;
-      padding: 14px 26px;
+      background: rgba(0,0,0,0.30);
+      border: 3px solid rgba(255,255,255,0.12);
+      border-radius: 18px;
+      padding: 16px 28px;
       display: inline-block;
       margin-bottom: 20px;
-      line-height: 1.5;
-      position: relative;
+      line-height: 1.55;
+      box-shadow: 0 6px 0 rgba(0,0,0,0.20);
+      text-shadow: 0 2px 0 rgba(0,0,0,0.35);
     }
 
     .arenaToggle {
-      background: rgba(255,255,255,0.2);
+      background: linear-gradient(#67d4ff, #1087df);
       color: white;
-      border: 2px solid #8be0ff;
-      border-radius: 10px;
-      padding: 5px 12px;
+      border: 3px solid #a7edff;
+      border-radius: 12px;
+      padding: 6px 14px;
       font-size: 20px;
-      font-weight: bold;
+      font-weight: 900;
       cursor: pointer;
+      box-shadow: 0 4px 0 rgba(0,0,0,0.22);
+      text-shadow: 0 2px 0 rgba(0,0,0,0.25);
     }
 
     #arenaMenu {
       display: none;
-      margin-top: 10px;
-      background: rgba(0, 139, 255, 0.95);
+      margin-top: 12px;
+      background: rgba(0, 139, 255, 0.96);
       border: 3px solid #8be0ff;
-      border-radius: 14px;
+      border-radius: 16px;
       overflow: hidden;
+      box-shadow: 0 7px 0 rgba(0,0,0,0.25);
     }
 
     .arenaOption {
-      padding: 10px 18px;
+      padding: 11px 18px;
       cursor: pointer;
       font-size: 19px;
-      font-weight: bold;
+      font-weight: 900;
+      border-bottom: 1px solid rgba(255,255,255,0.15);
     }
 
     .arenaOption:hover {
-      background: rgba(255,255,255,0.25);
+      background: rgba(255,255,255,0.24);
     }
 
     #bigPlayButton {
       display: block;
       margin: 0 auto;
-      font-size: 44px;
-      font-weight: 900;
-      padding: 18px 72px;
-      border: 5px solid #ffe98a;
-      border-radius: 20px;
+      font-size: 48px;
+      font-weight: 1000;
+      padding: 20px 86px;
+      border: 6px solid #fff08a;
+      border-radius: 22px;
       color: white;
-      background: linear-gradient(#ffe45c, #ff8c00);
+      background: linear-gradient(#ffe769, #ff8b00);
       box-shadow:
-        0 8px 0 #b94c00,
-        0 12px 25px rgba(0,0,0,0.4);
+        0 9px 0 #b54f00,
+        0 18px 34px rgba(0,0,0,0.42);
       cursor: pointer;
+      text-shadow: 0 4px 0 rgba(0,0,0,0.22);
+      letter-spacing: 2px;
     }
 
     #bigPlayButton:hover {
-      transform: scale(1.04);
+      transform: scale(1.045);
     }
 
     #smallButtons {
-      margin-top: 18px;
+      margin-top: 20px;
+      display: flex;
+      justify-content: center;
+      gap: 14px;
     }
 
     .smallBlue {
       font-size: 22px;
-      padding: 10px 34px;
+      padding: 11px 38px;
       border-radius: 18px;
-      border: 3px solid #94ddff;
+      border: 3px solid #9de7ff;
       color: white;
-      background: linear-gradient(#54c5ff, #117bd0);
-      font-weight: bold;
-      margin: 0 5px;
+      background: linear-gradient(#65d0ff, #117bd0);
+      font-weight: 900;
+      box-shadow: 0 5px 0 rgba(0,0,0,0.25);
+      cursor: pointer;
     }
 
     #customPanel {
       position: absolute;
-      right: 25px;
-      top: 95px;
-      width: 230px;
-      background: rgba(0, 139, 255, 0.75);
-      border: 3px solid #8be0ff;
-      border-radius: 16px;
-      padding: 14px;
-      box-shadow: 0 5px 0 rgba(0,0,0,0.25);
+      right: 26px;
+      top: 92px;
+      width: 270px;
+      background: rgba(0, 139, 255, 0.84);
+      border: 4px solid #8be0ff;
+      border-radius: 20px;
+      padding: 16px;
+      box-shadow: 0 7px 0 rgba(0,0,0,0.30);
       display: none;
       z-index: 20;
     }
 
     #customPanel h3 {
-      margin: 0 0 10px;
+      margin: 0 0 12px;
+      font-size: 28px;
+      text-shadow: 0 2px 0 rgba(0,0,0,0.25);
     }
 
     #customPanel label {
       display: block;
-      margin-top: 10px;
-      font-weight: bold;
+      margin-top: 11px;
+      font-weight: 900;
       color: #e8f8ff;
+      font-size: 17px;
+      text-shadow: 0 1px 0 rgba(0,0,0,0.25);
     }
 
     #customPanel select {
       width: 100%;
-      padding: 10px;
-      border-radius: 8px;
+      padding: 11px;
+      border-radius: 10px;
       border: none;
-      margin-top: 4px;
+      margin-top: 5px;
       box-sizing: border-box;
       font-size: 16px;
+      font-weight: 700;
     }
 
     #bottomBar {
       position: absolute;
-      right: 25px;
-      bottom: 18px;
+      right: 26px;
+      bottom: 20px;
       display: flex;
-      gap: 10px;
+      gap: 12px;
+      z-index: 3;
     }
 
     .bottomIcon {
-      width: 58px;
-      height: 58px;
-      border-radius: 16px;
+      width: 62px;
+      height: 62px;
+      border-radius: 18px;
       border: 4px solid #9ee3ff;
       background: linear-gradient(#58c7ff, #126fd0);
       color: white;
-      font-size: 22px;
+      font-size: 25px;
       font-weight: bold;
+      box-shadow: 0 5px 0 rgba(0,0,0,0.25);
     }
 
     #message {
       margin-top: 20px;
-      font-size: 24px;
-      font-weight: bold;
+      font-size: 25px;
+      font-weight: 900;
       color: #fff176;
       text-shadow: 2px 2px 0 #000;
-      min-height: 30px;
+      min-height: 32px;
     }
 
     #hud {
@@ -306,24 +360,14 @@
       top: 15px;
       color: white;
       font-size: 18px;
-      line-height: 1.5;
-      background: rgba(0,0,0,0.55);
-      padding: 12px 16px;
-      border-radius: 12px;
+      line-height: 1.55;
+      background: rgba(0,0,0,0.62);
+      padding: 13px 17px;
+      border-radius: 14px;
+      border: 2px solid rgba(255,255,255,0.18);
       display: none;
       z-index: 5;
-    }
-
-    #cameraButton {
-      font-size: 16px;
-      padding: 6px 12px;
-      margin-top: 6px;
-      border-radius: 8px;
-      border: none;
-      background: #00bfff;
-      color: white;
-      font-weight: bold;
-      cursor: pointer;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.35);
     }
 
     #levelMessage {
@@ -332,43 +376,73 @@
       left: 50%;
       transform: translate(-50%, -50%);
       color: #78e6ff;
-      font-size: 56px;
-      font-weight: bold;
-      text-shadow: 0 0 20px black;
+      font-size: 60px;
+      font-weight: 1000;
+      text-shadow:
+        0 0 20px black,
+        0 0 30px #00d9ff;
       display: none;
       z-index: 9;
     }
+
+    #crosshair {
+      position: fixed;
+      left: 50%;
+      top: 50%;
+      width: 18px;
+      height: 18px;
+      transform: translate(-50%, -50%);
+      border: 3px solid rgba(255,255,255,0.8);
+      border-radius: 50%;
+      z-index: 4;
+      display: none;
+      pointer-events: none;
+    }
+
+    #crosshair::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 5px;
+      height: 5px;
+      transform: translate(-50%, -50%);
+      background: white;
+      border-radius: 50%;
+    }
   </style>
 </head>
+
 <body>
 
 <div id="homeScreen">
   <div id="topBar">
     <div class="topBadge">⭐ Level <span id="homeLevelText">1</span></div>
-    <div class="topBadge">🏆 Seasons</div>
+    <div class="topBadge">🌎 Online Battle</div>
+    <div class="topButton">🏆 Seasons</div>
     <div class="topButton">Shop</div>
-    <div class="topButton">Free</div>
     <div class="topButton">Settings</div>
   </div>
 
   <div id="leftPanel">
-    <div class="currencyBox">
-      <div>📦 Parts: <b><span id="partsText">0</span></b></div>
-      <div>🪙 Coins: <b><span id="coinsText">0</span></b></div>
-      <div>💎 Gems: <b><span id="gemsText">0</span></b></div>
+    <div class="glassPanel">
+      <div class="currencyItem"><span>📦 Parts</span><b id="partsText">0</b></div>
+      <div class="currencyItem"><span>🪙 Coins</span><b id="coinsText">0</b></div>
+      <div class="currencyItem"><span>💎 Gems</span><b id="gemsText">0</b></div>
     </div>
 
-    <div class="profileBox">
+    <div class="glassPanel">
       <input class="playerName" id="playerNameInput" value="Player" maxlength="16">
       <button class="orangeBtn" id="openCustomizeBtn">Customize</button>
       <button class="redBtn" onclick="resetProgress()">Reset Save</button>
     </div>
 
-    <div class="newsBox">
+    <div class="glassPanel newsBox">
       <h3>News</h3>
-      <div class="newsItem">🔥 New arenas added</div>
-      <div class="newsItem">🚗 3D cars added</div>
-      <div class="newsItem">🎁 Weapon boxes are live</div>
+      <div class="newsItem">🌎 Online players enabled</div>
+      <div class="newsItem">🚗 New cartoon karts</div>
+      <div class="newsItem">🔥 Press SPACE to shoot</div>
+      <div class="newsItem">💥 Health bars added</div>
     </div>
   </div>
 
@@ -379,7 +453,8 @@
 
     <div id="homeStats">
       XP: <span id="homeXpText">0</span> / <span id="homeXpNeededText">5</span><br>
-      Mode: <span id="homeModeText">Solo Battle</span><br>
+      Mode: <span id="homeModeText">Online Battle</span><br>
+      Online Players: <span id="onlinePlayersText">0</span><br>
       Arena:
       <button id="arenaToggleBtn" class="arenaToggle">
         <span id="homeArenaText">Junkyard</span> ^
@@ -400,7 +475,7 @@
       <button class="smallBlue">Join</button>
     </div>
 
-    <div id="message"></div>
+    <div id="message">Connecting to server...</div>
   </div>
 
   <div id="customPanel">
@@ -467,30 +542,35 @@
 </div>
 
 <div id="hud">
-  <b>CarDestroy.io 3D</b><br>
+  <b>CarDestroy.io Online</b><br>
   Player: <span id="hudPlayerName">Player</span><br>
   Health: <span id="healthText">100</span><br>
-  Current Level: <span id="levelText">1</span><br>
+  Level: <span id="levelText">1</span><br>
   XP: <span id="xpText">0</span> / <span id="xpNeededText">5</span><br>
-  Weapon: <span id="weaponText">Flamethrower</span><br>
-  Enemies Left: <span id="enemyText">0</span><br>
-  Camera: <span id="cameraText">Smash View</span><br>
-  Character: <span id="characterText">Driver</span><br>
   Arena: <span id="hudArenaText">Junkyard</span><br>
-  <button id="cameraButton">Change Camera</button>
+  Online Players: <span id="hudOnlinePlayersText">0</span><br>
+  Weapon: Rifle<br>
+  Move: WASD / Arrows<br>
+  Shoot: SPACE
 </div>
 
+<div id="crosshair"></div>
 <div id="levelMessage">LEVEL UP!</div>
 
 <canvas id="gameCanvas"></canvas>
 
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+
 <script type="module">
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
+
+const SERVER_URL = "https://YOUR-SERVER-LINK.onrender.com";
 
 const canvas = document.getElementById("gameCanvas");
 
 const homeScreen = document.getElementById("homeScreen");
 const hud = document.getElementById("hud");
+const crosshair = document.getElementById("crosshair");
 const message = document.getElementById("message");
 const levelMessage = document.getElementById("levelMessage");
 
@@ -498,19 +578,15 @@ const healthText = document.getElementById("healthText");
 const levelText = document.getElementById("levelText");
 const xpText = document.getElementById("xpText");
 const xpNeededText = document.getElementById("xpNeededText");
-const weaponText = document.getElementById("weaponText");
-const enemyText = document.getElementById("enemyText");
-const cameraText = document.getElementById("cameraText");
-const characterText = document.getElementById("characterText");
 const hudArenaText = document.getElementById("hudArenaText");
-const cameraButton = document.getElementById("cameraButton");
+const hudOnlinePlayersText = document.getElementById("hudOnlinePlayersText");
 const hudPlayerName = document.getElementById("hudPlayerName");
 
 const homeLevelText = document.getElementById("homeLevelText");
 const homeXpText = document.getElementById("homeXpText");
 const homeXpNeededText = document.getElementById("homeXpNeededText");
-const homeModeText = document.getElementById("homeModeText");
 const homeArenaText = document.getElementById("homeArenaText");
+const onlinePlayersText = document.getElementById("onlinePlayersText");
 
 const arenaToggleBtn = document.getElementById("arenaToggleBtn");
 const arenaMenu = document.getElementById("arenaMenu");
@@ -533,16 +609,16 @@ const wheelColorSelect = document.getElementById("wheelColorSelect");
 const hatColorSelect = document.getElementById("hatColorSelect");
 const backgroundColorSelect = document.getElementById("backgroundColorSelect");
 
-let scene, camera, renderer, ground;
-let player;
+let socket = null;
+let mySocketId = null;
+let connectedToServer = false;
 
-let enemies = [];
+let scene, camera, renderer, ground;
+let player = null;
+
+let otherPlayers = {};
 let bullets = [];
-let rockets = [];
-let mines = [];
-let enemyBullets = [];
-let weaponBoxes = [];
-let fireParticles = [];
+let particles = [];
 let arenaObjects = [];
 
 let gameState = "home";
@@ -559,26 +635,20 @@ let parts = 0;
 let coins = 0;
 let gems = 0;
 
-let currentWeapon = "Flamethrower";
-const weapons = ["Rocket", "Mine", "Flamethrower", "Shield", "Rifle"];
-
 let playerHealth = 100;
-let playerSpeed = 0.16;
-let weaponDamageBoost = 1;
+let playerSpeed = 0.18;
 
-let shieldActive = false;
-let shieldTime = 0;
-let shieldMesh = null;
-
-let cameraMode = 1;
+let lastSendTime = 0;
 
 init3D();
 loadProgress();
+connectToServer();
 createSelectedArena();
 updateUI();
 animate();
 
-cameraButton.addEventListener("click", changeCameraMode);
+window.startGame = startGame;
+window.resetProgress = resetProgress;
 
 playerNameInput.addEventListener("input", () => {
   const newName = playerNameInput.value.trim();
@@ -589,6 +659,7 @@ playerNameInput.addEventListener("input", () => {
     playerDisplayName = "Player";
   }
 
+  sendPlayerUpdate();
   saveProgress();
   updateUI();
 });
@@ -618,6 +689,106 @@ closeCustomizeBtn.addEventListener("click", () => {
 });
 
 applyCustomizeBtn.addEventListener("click", applyCustomization);
+
+function connectToServer() {
+  socket = io(SERVER_URL);
+
+  socket.on("connect", () => {
+    connectedToServer = true;
+    mySocketId = socket.id;
+    message.textContent = "Connected! Click PLAY.";
+    updateUI();
+  });
+
+  socket.on("connect_error", () => {
+    connectedToServer = false;
+    message.textContent = "Server not connected. Check SERVER_URL.";
+    updateUI();
+  });
+
+  socket.on("currentPlayers", players => {
+    for (const id in players) {
+      if (id === socket.id) {
+        applyServerPlayerData(players[id]);
+      } else {
+        addOtherPlayer(players[id]);
+      }
+    }
+
+    updateUI();
+  });
+
+  socket.on("newPlayer", playerData => {
+    if (playerData.id !== socket.id) {
+      addOtherPlayer(playerData);
+    }
+
+    updateUI();
+  });
+
+  socket.on("playerMoved", playerData => {
+    if (playerData.id === socket.id) return;
+
+    if (!otherPlayers[playerData.id]) {
+      addOtherPlayer(playerData);
+    }
+
+    otherPlayers[playerData.id].data = playerData;
+    updateNameAndHealthBar(otherPlayers[playerData.id], playerData);
+  });
+
+  socket.on("playerDisconnected", id => {
+    removeOtherPlayer(id);
+    updateUI();
+  });
+
+  socket.on("bulletCreated", bulletData => {
+    createNetworkBullet(bulletData);
+  });
+
+  socket.on("playerHealthUpdated", data => {
+    if (data.id === socket.id) {
+      playerHealth = data.health;
+      showDamageFlash();
+      updateUI();
+    } else if (otherPlayers[data.id]) {
+      otherPlayers[data.id].data.health = data.health;
+      updateNameAndHealthBar(otherPlayers[data.id], otherPlayers[data.id].data);
+    }
+  });
+
+  socket.on("playerRespawned", data => {
+    if (data.id === socket.id) {
+      playerHealth = data.health;
+
+      if (player) {
+        player.position.set(data.x, 0, data.z);
+      }
+
+      updateUI();
+    } else if (otherPlayers[data.id]) {
+      otherPlayers[data.id].data.health = data.health;
+      otherPlayers[data.id].mesh.position.set(data.x, 0, data.z);
+      updateNameAndHealthBar(otherPlayers[data.id], data);
+    }
+  });
+
+  socket.on("playerLeveled", data => {
+    if (data.id === socket.id) {
+      currentLevel = data.level;
+      xp = data.xp;
+      coins += 25;
+      parts += 5;
+      showLevelUp();
+      saveProgress();
+      updateUI();
+    }
+  });
+}
+
+function applyServerPlayerData(data) {
+  playerHealth = data.health || 100;
+}
 
 function saveProgress() {
   const saveData = {
@@ -663,10 +834,6 @@ function loadProgress() {
     backgroundColorSelect.value = saveData.backgroundColor || "#141820";
 
     playerNameInput.value = playerDisplayName;
-
-    if (scene) {
-      scene.background = new THREE.Color(backgroundColorSelect.value);
-    }
   } catch (error) {
     localStorage.removeItem("carDestroySaveData");
   }
@@ -674,7 +841,6 @@ function loadProgress() {
 
 function resetProgress() {
   localStorage.removeItem("carDestroySaveData");
-  localStorage.clear();
 
   playerDisplayName = "Player";
   selectedArena = "Junkyard";
@@ -686,6 +852,8 @@ function resetProgress() {
   parts = 0;
   coins = 0;
   gems = 0;
+
+  playerHealth = 100;
 
   characterSelect.value = "driver";
   carColorSelect.value = "#00bfff";
@@ -700,26 +868,27 @@ function resetProgress() {
   customPanel.style.display = "none";
   arenaMenu.style.display = "none";
 
-  if (gameState === "playing") {
-    clearGameObjects();
-  }
-
   gameState = "home";
   homeScreen.style.display = "block";
   hud.style.display = "none";
+  crosshair.style.display = "none";
+
+  if (player) {
+    scene.remove(player);
+    player = null;
+  }
 
   message.textContent = "Progress deleted!";
 
   setTimeout(() => {
     if (gameState === "home") {
-      message.textContent = "";
+      message.textContent = connectedToServer ? "Connected! Click PLAY." : "Server not connected.";
     }
   }, 1500);
 
+  sendPlayerUpdate();
   updateUI();
 }
-
-window.resetProgress = resetProgress;
 
 function applyCustomization() {
   scene.background = new THREE.Color(backgroundColorSelect.value);
@@ -727,14 +896,15 @@ function applyCustomization() {
   message.textContent = "Customization saved!";
   customPanel.style.display = "none";
 
-  setTimeout(() => {
-    if (gameState === "home") {
-      message.textContent = "";
-    }
-  }, 1200);
-
+  sendPlayerUpdate();
   saveProgress();
   updateUI();
+
+  setTimeout(() => {
+    if (gameState === "home") {
+      message.textContent = connectedToServer ? "Connected! Click PLAY." : "Server not connected.";
+    }
+  }, 1200);
 }
 
 function init3D() {
@@ -758,10 +928,10 @@ function init3D() {
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.shadowMap.enabled = true;
 
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.55);
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.70);
   scene.add(ambientLight);
 
-  const sun = new THREE.DirectionalLight(0xffffff, 1.1);
+  const sun = new THREE.DirectionalLight(0xffffff, 1.2);
   sun.position.set(20, 35, 20);
   sun.castShadow = true;
   scene.add(sun);
@@ -787,13 +957,12 @@ function init3D() {
   document.addEventListener("keydown", e => {
     keys[e.key.toLowerCase()] = true;
 
-    if (e.key.toLowerCase() === "c" && gameState === "playing") {
-      changeCameraMode();
-    }
-
     if (e.code === "Space" && gameState === "playing") {
       e.preventDefault();
-      if (!e.repeat) useWeapon();
+
+      if (!e.repeat) {
+        shootOnlineBullet();
+      }
     }
   });
 
@@ -803,23 +972,26 @@ function init3D() {
 }
 
 function createArenaWalls() {
-  const wallMaterial = new THREE.MeshStandardMaterial({ color: 0x555555 });
+  const wallMaterial = new THREE.MeshStandardMaterial({
+    color: 0x1e70c5,
+    roughness: 0.5
+  });
 
-  const wall1 = new THREE.Mesh(new THREE.BoxGeometry(90, 3, 1), wallMaterial);
-  wall1.position.set(0, 1.5, -45);
-  scene.add(wall1);
+  const wallTop = new THREE.Mesh(new THREE.BoxGeometry(90, 4, 1.2), wallMaterial);
+  wallTop.position.set(0, 2, -45);
+  scene.add(wallTop);
 
-  const wall2 = wall1.clone();
-  wall2.position.set(0, 1.5, 45);
-  scene.add(wall2);
+  const wallBottom = wallTop.clone();
+  wallBottom.position.set(0, 2, 45);
+  scene.add(wallBottom);
 
-  const wall3 = new THREE.Mesh(new THREE.BoxGeometry(1, 3, 90), wallMaterial);
-  wall3.position.set(-45, 1.5, 0);
-  scene.add(wall3);
+  const wallLeft = new THREE.Mesh(new THREE.BoxGeometry(1.2, 4, 90), wallMaterial);
+  wallLeft.position.set(-45, 2, 0);
+  scene.add(wallLeft);
 
-  const wall4 = wall3.clone();
-  wall4.position.set(45, 1.5, 0);
-  scene.add(wall4);
+  const wallRight = wallLeft.clone();
+  wallRight.position.set(45, 2, 0);
+  scene.add(wallRight);
 }
 
 function createSelectedArena() {
@@ -858,28 +1030,41 @@ function createJunkyardArena() {
   const barrelMaterial = new THREE.MeshStandardMaterial({ color: 0xff6600 });
   const tireMaterial = new THREE.MeshStandardMaterial({ color: 0x050505 });
   const scrapMaterial = new THREE.MeshStandardMaterial({ color: 0x777777 });
+  const rampMaterial = new THREE.MeshStandardMaterial({ color: 0x999999 });
 
-  for (let i = 0; i < 12; i++) {
+  for (let i = 0; i < 18; i++) {
     const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 1.4, 18), barrelMaterial);
     barrel.position.set(randomBetween(-38, 38), 0.7, randomBetween(-38, 38));
+    barrel.castShadow = true;
     addArenaObject(barrel);
   }
 
-  for (let i = 0; i < 8; i++) {
+  for (let i = 0; i < 12; i++) {
     const tire = new THREE.Mesh(new THREE.TorusGeometry(0.75, 0.22, 12, 24), tireMaterial);
     tire.position.set(randomBetween(-38, 38), 0.5, randomBetween(-38, 38));
     tire.rotation.x = Math.PI / 2;
+    tire.castShadow = true;
     addArenaObject(tire);
   }
 
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < 14; i++) {
     const scrap = new THREE.Mesh(
       new THREE.BoxGeometry(randomBetween(2, 5), randomBetween(1, 2.5), randomBetween(2, 5)),
       scrapMaterial
     );
     scrap.position.set(randomBetween(-38, 38), 0.8, randomBetween(-38, 38));
     scrap.rotation.y = Math.random() * Math.PI;
+    scrap.castShadow = true;
     addArenaObject(scrap);
+  }
+
+  for (let i = 0; i < 4; i++) {
+    const ramp = new THREE.Mesh(new THREE.BoxGeometry(5, 0.45, 8), rampMaterial);
+    ramp.position.set(randomBetween(-28, 28), 0.35, randomBetween(-28, 28));
+    ramp.rotation.x = -0.25;
+    ramp.rotation.y = Math.random() * Math.PI;
+    ramp.castShadow = true;
+    addArenaObject(ramp);
   }
 }
 
@@ -887,13 +1072,14 @@ function createDesertArena() {
   const rockMaterial = new THREE.MeshStandardMaterial({ color: 0x8b5a2b });
   const cactusMaterial = new THREE.MeshStandardMaterial({ color: 0x1f8f3a });
 
-  for (let i = 0; i < 14; i++) {
-    const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(randomBetween(0.8, 1.8)), rockMaterial);
+  for (let i = 0; i < 18; i++) {
+    const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(randomBetween(0.8, 1.9)), rockMaterial);
     rock.position.set(randomBetween(-38, 38), 0.8, randomBetween(-38, 38));
+    rock.castShadow = true;
     addArenaObject(rock);
   }
 
-  for (let i = 0; i < 8; i++) {
+  for (let i = 0; i < 11; i++) {
     const cactus = new THREE.Group();
 
     const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.35, 2.2, 12), cactusMaterial);
@@ -915,21 +1101,23 @@ function createFactoryArena() {
   const machineMaterial = new THREE.MeshStandardMaterial({ color: 0x777777 });
   const hazardMaterial = new THREE.MeshStandardMaterial({ color: 0xffcc00 });
 
-  for (let i = 0; i < 12; i++) {
+  for (let i = 0; i < 16; i++) {
     const crate = new THREE.Mesh(new THREE.BoxGeometry(2.5, 2.5, 2.5), crateMaterial);
     crate.position.set(randomBetween(-38, 38), 1.25, randomBetween(-38, 38));
     crate.rotation.y = Math.random() * Math.PI;
+    crate.castShadow = true;
     addArenaObject(crate);
   }
 
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 8; i++) {
     const machine = new THREE.Mesh(new THREE.BoxGeometry(4, 2, 3), machineMaterial);
     machine.position.set(randomBetween(-30, 30), 1, randomBetween(-30, 30));
     machine.rotation.y = Math.random() * Math.PI;
+    machine.castShadow = true;
     addArenaObject(machine);
   }
 
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < 8; i++) {
     const hazard = new THREE.Mesh(new THREE.BoxGeometry(6, 0.05, 1), hazardMaterial);
     hazard.position.set(randomBetween(-35, 35), 0.04, randomBetween(-35, 35));
     hazard.rotation.y = Math.random() * Math.PI;
@@ -946,18 +1134,20 @@ function createParkingGarageArena() {
     for (let z = -30; z <= 30; z += 15) {
       const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 4, 18), pillarMaterial);
       pillar.position.set(x, 2, z);
+      pillar.castShadow = true;
       addArenaObject(pillar);
     }
   }
 
-  for (let i = 0; i < 8; i++) {
+  for (let i = 0; i < 10; i++) {
     const parked = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.8, 4), carMaterial);
     parked.position.set(randomBetween(-35, 35), 0.4, randomBetween(-35, 35));
     parked.rotation.y = Math.random() * Math.PI;
+    parked.castShadow = true;
     addArenaObject(parked);
   }
 
-  for (let i = 0; i < 12; i++) {
+  for (let i = 0; i < 18; i++) {
     const line = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.03, 7), lineMaterial);
     line.position.set(randomBetween(-38, 38), 0.03, randomBetween(-38, 38));
     line.rotation.y = Math.random() > 0.5 ? 0 : Math.PI / 2;
@@ -965,58 +1155,107 @@ function createParkingGarageArena() {
   }
 }
 
-function createCar(carColor, wheelColor, hatColor, characterType) {
+function createCar(carColor, wheelColor, hatColor, characterType, nameText = "Player") {
   const group = new THREE.Group();
 
-  const body = new THREE.Mesh(
-    new THREE.BoxGeometry(2.5, 0.7, 4),
-    new THREE.MeshStandardMaterial({ color: new THREE.Color(carColor) })
+  const baseColor = new THREE.Color(carColor);
+  const darkerColor = baseColor.clone().multiplyScalar(0.6);
+
+  const base = new THREE.Mesh(
+    new THREE.BoxGeometry(2.8, 0.55, 3.8),
+    new THREE.MeshStandardMaterial({ color: darkerColor })
   );
-  body.position.y = 0.55;
+  base.position.y = 0.45;
+  base.castShadow = true;
+  group.add(base);
+
+  const body = new THREE.Mesh(
+    new THREE.BoxGeometry(2.5, 0.85, 3.4),
+    new THREE.MeshStandardMaterial({ color: baseColor, roughness: 0.45 })
+  );
+  body.position.y = 0.85;
   body.castShadow = true;
   group.add(body);
 
-  const cabin = new THREE.Mesh(
-    new THREE.BoxGeometry(1.5, 0.7, 1.5),
-    new THREE.MeshStandardMaterial({ color: 0x111111 })
+  const nose = new THREE.Mesh(
+    new THREE.BoxGeometry(1.6, 0.45, 1.2),
+    new THREE.MeshStandardMaterial({ color: baseColor.clone().multiplyScalar(1.15) })
   );
-  cabin.position.set(0, 1.15, -0.3);
+  nose.position.set(0, 0.95, -2.05);
+  nose.castShadow = true;
+  group.add(nose);
+
+  const cabin = new THREE.Mesh(
+    new THREE.BoxGeometry(1.35, 0.75, 1.25),
+    new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.25 })
+  );
+  cabin.position.set(0, 1.45, -0.25);
   cabin.castShadow = true;
   group.add(cabin);
 
-  const frontLight = new THREE.Mesh(
-    new THREE.BoxGeometry(1.2, 0.2, 0.25),
-    new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0x222222 })
+  const spoiler = new THREE.Mesh(
+    new THREE.BoxGeometry(2.8, 0.22, 0.45),
+    new THREE.MeshStandardMaterial({ color: 0xffffff })
   );
-  frontLight.position.set(0, 0.95, -2.05);
-  group.add(frontLight);
+  spoiler.position.set(0, 1.25, 1.95);
+  spoiler.castShadow = true;
+  group.add(spoiler);
 
   const wheelMaterial = new THREE.MeshStandardMaterial({
-    color: new THREE.Color(wheelColor)
+    color: new THREE.Color(wheelColor),
+    roughness: 0.75
+  });
+
+  const hubMaterial = new THREE.MeshStandardMaterial({
+    color: 0xffffff,
+    roughness: 0.3
   });
 
   const wheelPositions = [
-    [-1.35, 0.35, 1.35],
-    [1.35, 0.35, 1.35],
-    [-1.35, 0.35, -1.35],
-    [1.35, 0.35, -1.35]
+    [-1.45, 0.45, 1.25],
+    [1.45, 0.45, 1.25],
+    [-1.45, 0.45, -1.25],
+    [1.45, 0.45, -1.25]
   ];
 
   wheelPositions.forEach(pos => {
-    const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 0.35, 16), wheelMaterial);
+    const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.42, 24), wheelMaterial);
     wheel.rotation.z = Math.PI / 2;
     wheel.position.set(pos[0], pos[1], pos[2]);
     wheel.castShadow = true;
     group.add(wheel);
+
+    const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.20, 0.20, 0.46, 20), hubMaterial);
+    hub.rotation.z = Math.PI / 2;
+    hub.position.set(pos[0], pos[1], pos[2]);
+    group.add(hub);
   });
 
   addCharacter(group, characterType, hatColor);
 
+  const nameSprite = createTextSprite(nameText, "rgba(0,0,0,0.60)", "white", 34);
+  nameSprite.position.set(0, 4.0, 0);
+  group.add(nameSprite);
+
+  const healthBack = new THREE.Mesh(
+    new THREE.PlaneGeometry(3.2, 0.28),
+    new THREE.MeshBasicMaterial({ color: 0x111111, transparent: true, opacity: 0.85 })
+  );
+  healthBack.position.set(0, 3.45, 0);
+  group.add(healthBack);
+
+  const healthBar = new THREE.Mesh(
+    new THREE.PlaneGeometry(3.0, 0.18),
+    new THREE.MeshBasicMaterial({ color: 0x33ff66 })
+  );
+  healthBar.position.set(0, 3.46, 0.01);
+  group.add(healthBar);
+
   group.userData = {
     health: 100,
-    maxHealth: 100,
-    speed: 0.12,
-    shootCooldown: 100
+    nameSprite,
+    healthBar,
+    healthBack
   };
 
   return group;
@@ -1042,190 +1281,158 @@ function addCharacter(group, characterType, hatColor) {
   }
 
   const driverBody = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.35, 0.45, 0.55, 16),
+    new THREE.CylinderGeometry(0.35, 0.46, 0.60, 18),
     new THREE.MeshStandardMaterial({ color: bodyColor })
   );
-  driverBody.position.set(0, 1.65, -0.3);
+  driverBody.position.set(0, 1.95, -0.28);
+  driverBody.castShadow = true;
   group.add(driverBody);
 
   const head = new THREE.Mesh(
-    new THREE.SphereGeometry(0.32, 16, 16),
+    new THREE.SphereGeometry(0.36, 18, 18),
     new THREE.MeshStandardMaterial({ color: headColor })
   );
-  head.position.set(0, 2.1, -0.3);
+  head.position.set(0, 2.45, -0.28);
+  head.castShadow = true;
   group.add(head);
 
   const hat = new THREE.Mesh(
-    new THREE.ConeGeometry(0.42, 0.45, 16),
+    new THREE.ConeGeometry(0.45, 0.48, 18),
     new THREE.MeshStandardMaterial({ color: new THREE.Color(hatColor) })
   );
-  hat.position.set(0, 2.55, -0.3);
+  hat.position.set(0, 2.92, -0.28);
+  hat.castShadow = true;
   group.add(hat);
 }
 
-function createEnemyCar() {
-  return createCar("#ff8c00", "#050505", "#222222", "robot");
-}
-
-function createWeaponBox(x, z) {
-  const group = new THREE.Group();
-
-  const box = new THREE.Mesh(
-    new THREE.BoxGeometry(2, 2, 2),
-    new THREE.MeshStandardMaterial({
-      color: 0x00bfff,
-      emissive: 0x005577,
-      roughness: 0.35
-    })
-  );
-  group.add(box);
-
-  const top = new THREE.Mesh(
-    new THREE.BoxGeometry(2.25, 0.25, 2.25),
-    new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0x222222 })
-  );
-  top.position.y = 1.1;
-  group.add(top);
-
-  const label = createTextSprite("WEAPON");
-  label.position.set(0, 2.3, 0);
-  group.add(label);
-
-  group.position.set(x, 1.1, z);
-  group.userData = {
-    type: weapons[Math.floor(Math.random() * weapons.length)],
-    spin: Math.random() * 0.05 + 0.02
-  };
-
-  scene.add(group);
-  weaponBoxes.push(group);
-}
-
-function createTextSprite(text) {
+function createTextSprite(text, background = "rgba(0,0,0,0.65)", color = "white", fontSize = 30) {
   const canvas2 = document.createElement("canvas");
-  canvas2.width = 256;
-  canvas2.height = 64;
+  canvas2.width = 512;
+  canvas2.height = 128;
 
   const ctx = canvas2.getContext("2d");
-  ctx.fillStyle = "rgba(0, 0, 0, 0.65)";
-  ctx.fillRect(0, 0, canvas2.width, canvas2.height);
+  ctx.clearRect(0, 0, canvas2.width, canvas2.height);
 
-  ctx.fillStyle = "white";
-  ctx.font = "bold 28px Arial";
+  roundRect(ctx, 12, 24, 488, 78, 20, background);
+  ctx.fillStyle = color;
+  ctx.font = "bold " + fontSize + "px Arial";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText(text, 128, 32);
+  ctx.fillText(text, 256, 64);
 
   const texture = new THREE.CanvasTexture(canvas2);
-  const material = new THREE.SpriteMaterial({ map: texture });
+  const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
   const sprite = new THREE.Sprite(material);
-  sprite.scale.set(5, 1.2, 1);
+  sprite.scale.set(4.8, 1.2, 1);
 
   return sprite;
 }
 
-function startGame() {
-  clearGameObjects();
-  createSelectedArena();
+function roundRect(ctx, x, y, w, h, r, fill) {
+  ctx.fillStyle = fill;
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+  ctx.fill();
+}
 
-  scene.background = new THREE.Color(backgroundColorSelect.value);
+function updateNameAndHealthBar(playerObject, data) {
+  if (!playerObject || !playerObject.mesh) return;
+
+  const mesh = playerObject.mesh;
+
+  if (mesh.userData.healthBar) {
+    const health = Math.max(0, Math.min(100, data.health || 100));
+    mesh.userData.healthBar.scale.x = health / 100;
+
+    if (health > 60) {
+      mesh.userData.healthBar.material.color.set(0x33ff66);
+    } else if (health > 30) {
+      mesh.userData.healthBar.material.color.set(0xffcc00);
+    } else {
+      mesh.userData.healthBar.material.color.set(0xff3333);
+    }
+  }
+}
+
+function startGame() {
+  if (!connectedToServer) {
+    message.textContent = "Server not connected yet.";
+    return;
+  }
 
   gameState = "playing";
   homeScreen.style.display = "none";
   hud.style.display = "block";
-  message.textContent = "";
+  crosshair.style.display = "block";
   customPanel.style.display = "none";
   arenaMenu.style.display = "none";
 
-  currentWeapon = "Flamethrower";
-  playerHealth = 100 + (currentLevel - 1) * 15;
-  playerSpeed = 0.16 + (currentLevel - 1) * 0.01;
-  weaponDamageBoost = 1 + (currentLevel - 1) * 0.08;
-
-  shieldActive = false;
-  shieldTime = 0;
-  cameraMode = 1;
+  if (player) {
+    scene.remove(player);
+  }
 
   player = createCar(
     carColorSelect.value,
     wheelColorSelect.value,
     hatColorSelect.value,
-    characterSelect.value
+    characterSelect.value,
+    playerDisplayName
   );
 
-  player.position.set(0, 0, 0);
+  player.position.set(randomBetween(-10, 10), 0, randomBetween(-10, 10));
   player.rotation.y = 0;
   scene.add(player);
 
-  spawnEnemies(8);
-  spawnWeaponBoxes(10);
+  playerHealth = 100;
 
+  sendPlayerUpdate();
   updateUI();
 }
 
-window.startGame = startGame;
+function addOtherPlayer(data) {
+  if (otherPlayers[data.id]) return;
 
-function clearGameObjects() {
-  const allObjects = [
-    player,
-    ...enemies,
-    ...bullets.map(b => b.mesh),
-    ...rockets.map(r => r.mesh),
-    ...mines.map(m => m.mesh),
-    ...enemyBullets.map(b => b.mesh),
-    ...weaponBoxes,
-    ...fireParticles.map(f => f.mesh)
-  ];
+  const mesh = createCar(
+    data.carColor || "#ff8c00",
+    data.wheelColor || "#050505",
+    data.hatColor || "#222222",
+    data.character || "robot",
+    data.name || "Player"
+  );
 
-  allObjects.forEach(obj => {
-    if (obj) scene.remove(obj);
-  });
+  mesh.position.set(data.x || 0, 0, data.z || 0);
+  mesh.rotation.y = data.rotationY || 0;
+  scene.add(mesh);
 
-  enemies = [];
-  bullets = [];
-  rockets = [];
-  mines = [];
-  enemyBullets = [];
-  weaponBoxes = [];
-  fireParticles = [];
+  otherPlayers[data.id] = {
+    mesh,
+    data
+  };
 
-  if (shieldMesh) {
-    scene.remove(shieldMesh);
-    shieldMesh = null;
-  }
+  updateNameAndHealthBar(otherPlayers[data.id], data);
 }
 
-function spawnEnemies(count) {
-  for (let i = 0; i < count; i++) {
-    const enemy = createEnemyCar();
+function removeOtherPlayer(id) {
+  if (!otherPlayers[id]) return;
 
-    enemy.position.set(randomBetween(-35, 35), 0, randomBetween(-35, 35));
-
-    enemy.userData.health = 100 + currentLevel * 10;
-    enemy.userData.maxHealth = 100 + currentLevel * 10;
-    enemy.userData.speed = 0.08 + currentLevel * 0.008;
-    enemy.userData.shootCooldown = randomBetween(70, 160);
-
-    scene.add(enemy);
-    enemies.push(enemy);
-  }
-}
-
-function spawnWeaponBoxes(count) {
-  for (let i = 0; i < count; i++) {
-    createWeaponBox(randomBetween(-38, 38), randomBetween(-38, 38));
-  }
+  scene.remove(otherPlayers[id].mesh);
+  delete otherPlayers[id];
 }
 
 function movePlayer() {
   if (!player) return;
 
   if (keys["a"] || keys["arrowleft"]) {
-    player.rotation.y += 0.045;
+    player.rotation.y += 0.048;
   }
 
   if (keys["d"] || keys["arrowright"]) {
-    player.rotation.y -= 0.045;
+    player.rotation.y -= 0.048;
   }
 
   const forward = getForwardVector(player.rotation.y);
@@ -1235,323 +1442,138 @@ function movePlayer() {
   }
 
   if (keys["s"] || keys["arrowdown"]) {
-    player.position.add(forward.clone().multiplyScalar(-playerSpeed * 0.65));
+    player.position.add(forward.clone().multiplyScalar(-playerSpeed * 0.68));
   }
 
   player.position.x = clamp(player.position.x, -42, 42);
   player.position.z = clamp(player.position.z, -42, 42);
-}
 
-function changeCameraMode() {
-  if (gameState !== "playing") return;
+  const now = performance.now();
 
-  cameraMode++;
-  if (cameraMode > 4) cameraMode = 1;
-
-  updateUI();
-}
-
-function updateCamera() {
-  if (!player) return;
-
-  let targetPosition;
-
-  if (cameraMode === 1) {
-    const behind = new THREE.Vector3(
-      Math.sin(player.rotation.y) * 11,
-      7,
-      Math.cos(player.rotation.y) * 11
-    );
-
-    targetPosition = player.position.clone().add(behind);
-    camera.position.lerp(targetPosition, 0.12);
-    camera.lookAt(player.position.x, player.position.y + 1.4, player.position.z);
-  }
-
-  if (cameraMode === 2) {
-    targetPosition = new THREE.Vector3(player.position.x, 36, player.position.z + 0.1);
-    camera.position.lerp(targetPosition, 0.12);
-    camera.lookAt(player.position.x, player.position.y, player.position.z);
-  }
-
-  if (cameraMode === 3) {
-    const closeBehind = new THREE.Vector3(
-      Math.sin(player.rotation.y) * 6,
-      3.8,
-      Math.cos(player.rotation.y) * 6
-    );
-
-    targetPosition = player.position.clone().add(closeBehind);
-    camera.position.lerp(targetPosition, 0.16);
-    camera.lookAt(player.position.x, player.position.y + 1.2, player.position.z);
-  }
-
-  if (cameraMode === 4) {
-    targetPosition = new THREE.Vector3(
-      player.position.x + 16,
-      20,
-      player.position.z + 16
-    );
-
-    camera.position.lerp(targetPosition, 0.10);
-    camera.lookAt(player.position.x, player.position.y, player.position.z);
+  if (now - lastSendTime > 50) {
+    sendPlayerUpdate();
+    lastSendTime = now;
   }
 }
 
-function useWeapon() {
-  if (!currentWeapon || !player) return;
+function sendPlayerUpdate() {
+  if (!socket || !connectedToServer) return;
 
-  if (currentWeapon === "Rocket") {
-    for (let i = -1.5; i <= 1.5; i++) {
-      shootRocket(player.rotation.y + i * 0.16);
-    }
-  }
-
-  if (currentWeapon === "Mine") {
-    dropMines();
-  }
-
-  if (currentWeapon === "Rifle") {
-    shootRifle();
-  }
-
-  if (currentWeapon === "Shield") {
-    activateShield();
-  }
-
-  if (currentWeapon === "Flamethrower") {
-    shootFire();
-  }
-
-  consumeWeapon();
-}
-
-function shootRocket(angle) {
-  const mesh = new THREE.Mesh(
-    new THREE.SphereGeometry(0.35, 16, 16),
-    new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xaa0000 })
-  );
-
-  mesh.position.copy(player.position);
-  mesh.position.y = 1;
-  scene.add(mesh);
-
-  rockets.push({
-    mesh,
-    angle,
-    speed: 0.45,
-    damage: 45 * weaponDamageBoost
+  socket.emit("updatePlayer", {
+    name: playerDisplayName,
+    x: player ? player.position.x : 0,
+    z: player ? player.position.z : 0,
+    rotationY: player ? player.rotation.y : 0,
+    health: playerHealth,
+    level: currentLevel,
+    xp: xp,
+    carColor: carColorSelect.value,
+    wheelColor: wheelColorSelect.value,
+    hatColor: hatColorSelect.value,
+    character: characterSelect.value
   });
 }
 
-function dropMines() {
-  for (let i = 0; i < 4; i++) {
-    const mesh = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.65, 0.65, 0.25, 20),
-      new THREE.MeshStandardMaterial({ color: 0x111111, emissive: 0x330000 })
-    );
+function updateOtherPlayers() {
+  for (const id in otherPlayers) {
+    const other = otherPlayers[id];
 
-    const back = new THREE.Vector3(
-      Math.sin(player.rotation.y),
-      0,
-      Math.cos(player.rotation.y)
-    );
+    other.mesh.position.x += (other.data.x - other.mesh.position.x) * 0.20;
+    other.mesh.position.z += (other.data.z - other.mesh.position.z) * 0.20;
+    other.mesh.rotation.y += (other.data.rotationY - other.mesh.rotation.y) * 0.20;
 
-    mesh.position.copy(player.position);
-    mesh.position.add(back.multiplyScalar(2.8 + i * 1.5));
-    mesh.position.y = 0.2;
-    scene.add(mesh);
+    if (other.mesh.userData.nameSprite) {
+      other.mesh.userData.nameSprite.lookAt(camera.position);
+    }
 
-    mines.push({
-      mesh,
-      damage: 55 * weaponDamageBoost
-    });
+    if (other.mesh.userData.healthBack) {
+      other.mesh.userData.healthBack.lookAt(camera.position);
+    }
+
+    if (other.mesh.userData.healthBar) {
+      other.mesh.userData.healthBar.lookAt(camera.position);
+    }
+  }
+
+  if (player) {
+    if (player.userData.nameSprite) player.userData.nameSprite.lookAt(camera.position);
+    if (player.userData.healthBack) player.userData.healthBack.lookAt(camera.position);
+    if (player.userData.healthBar) player.userData.healthBar.lookAt(camera.position);
   }
 }
 
-function shootRifle() {
-  const angle = getNearestEnemyAngle();
+function shootOnlineBullet() {
+  if (!socket || !connectedToServer || !player) return;
 
-  for (let i = -1.5; i <= 1.5; i++) {
-    const mesh = new THREE.Mesh(
-      new THREE.SphereGeometry(0.18, 12, 12),
-      new THREE.MeshStandardMaterial({ color: 0xffff00, emissive: 0x999900 })
-    );
-
-    mesh.position.copy(player.position);
-    mesh.position.y = 1;
-    scene.add(mesh);
-
-    bullets.push({
-      mesh,
-      angle: angle + i * 0.035,
-      speed: 0.65,
-      damage: 20 * weaponDamageBoost
-    });
-  }
-}
-
-function activateShield() {
-  shieldActive = true;
-  shieldTime = 300;
-
-  if (shieldMesh) scene.remove(shieldMesh);
-
-  const geometry = new THREE.TorusGeometry(2.1, 0.08, 12, 36, Math.PI);
-  const material = new THREE.MeshStandardMaterial({
-    color: 0x78e6ff,
-    emissive: 0x0088aa,
-    transparent: true,
-    opacity: 0.75
+  socket.emit("shootBullet", {
+    x: player.position.x,
+    z: player.position.z,
+    rotationY: player.rotation.y,
+    damage: 20
   });
 
-  shieldMesh = new THREE.Mesh(geometry, material);
-  scene.add(shieldMesh);
+  createMuzzleFlash(player.position, player.rotation.y);
 }
 
-function shootFire() {
-  const fireCount = 18;
-
-  for (let i = 0; i < fireCount; i++) {
-    const fire = new THREE.Mesh(
-      new THREE.SphereGeometry(0.32 + Math.random() * 0.25, 12, 12),
-      new THREE.MeshStandardMaterial({
-        color: 0xff6600,
-        emissive: 0xff2200,
-        transparent: true,
-        opacity: 0.85
-      })
-    );
-
-    fire.position.copy(player.position);
-    fire.position.y = 1;
-
-    const spread = (Math.random() - 0.5) * 0.55;
-    const angle = player.rotation.y + spread;
-
-    scene.add(fire);
-
-    fireParticles.push({
-      mesh: fire,
-      angle,
-      speed: 0.35 + Math.random() * 0.2,
-      damage: 18 * weaponDamageBoost,
-      life: 45
-    });
-  }
-}
-
-function consumeWeapon() {
-  currentWeapon = null;
-  updateUI();
-}
-
-function updateWeaponBoxes() {
-  for (let i = weaponBoxes.length - 1; i >= 0; i--) {
-    const box = weaponBoxes[i];
-
-    box.rotation.y += box.userData.spin;
-    box.position.y = 1.1 + Math.sin(performance.now() * 0.004 + box.position.x) * 0.25;
-
-    if (player && distance2D(player.position, box.position) < 2.8) {
-      currentWeapon = box.userData.type;
-
-      scene.remove(box);
-      weaponBoxes.splice(i, 1);
-
-      createWeaponBox(randomBetween(-38, 38), randomBetween(-38, 38));
-      updateUI();
-    }
-  }
-}
-
-function updateEnemies() {
-  enemies.forEach(enemy => {
-    const dx = player.position.x - enemy.position.x;
-    const dz = player.position.z - enemy.position.z;
-
-    const angleToPlayer = Math.atan2(-dx, -dz);
-    enemy.rotation.y = angleToPlayer;
-
-    const d = distance2D(enemy.position, player.position);
-    const forward = getForwardVector(enemy.rotation.y);
-
-    if (d > 12) {
-      enemy.position.add(forward.clone().multiplyScalar(enemy.userData.speed));
-    } else if (d < 7) {
-      enemy.position.add(forward.clone().multiplyScalar(-enemy.userData.speed));
-    }
-
-    enemy.position.x = clamp(enemy.position.x, -42, 42);
-    enemy.position.z = clamp(enemy.position.z, -42, 42);
-
-    enemy.userData.shootCooldown--;
-
-    if (enemy.userData.shootCooldown <= 0) {
-      enemyShoot(enemy);
-      enemy.userData.shootCooldown = Math.max(45, 150 - currentLevel * 10);
-    }
-  });
-}
-
-function enemyShoot(enemy) {
-  const dx = player.position.x - enemy.position.x;
-  const dz = player.position.z - enemy.position.z;
-  const angle = Math.atan2(-dx, -dz);
+function createNetworkBullet(data) {
+  const mine = data.ownerId === mySocketId;
 
   const mesh = new THREE.Mesh(
-    new THREE.SphereGeometry(0.22, 12, 12),
-    new THREE.MeshStandardMaterial({ color: 0xff66ff, emissive: 0xaa00aa })
+    new THREE.SphereGeometry(0.26, 16, 16),
+    new THREE.MeshStandardMaterial({
+      color: mine ? 0xffff00 : 0xff66ff,
+      emissive: mine ? 0xffaa00 : 0xaa00aa,
+      roughness: 0.2
+    })
   );
 
-  mesh.position.copy(enemy.position);
-  mesh.position.y = 1;
+  mesh.position.set(data.x, 1.1, data.z);
   scene.add(mesh);
 
-  enemyBullets.push({
+  bullets.push({
+    id: data.id,
+    ownerId: data.ownerId,
     mesh,
-    angle,
-    speed: 0.35 + currentLevel * 0.02,
-    damage: 10 + currentLevel * 2
+    rotationY: data.rotationY,
+    damage: data.damage,
+    life: 120
   });
 }
 
-function updateProjectiles() {
-  updateProjectileArray(bullets, false);
-  updateProjectileArray(rockets, false);
-  updateProjectileArray(enemyBullets, true);
-}
+function updateBullets() {
+  for (let i = bullets.length - 1; i >= 0; i--) {
+    const bullet = bullets[i];
+    const forward = getForwardVector(bullet.rotationY);
 
-function updateProjectileArray(array, isEnemyBullet) {
-  for (let i = array.length - 1; i >= 0; i--) {
-    const item = array[i];
-    const forward = getForwardVector(item.angle);
+    bullet.mesh.position.add(forward.multiplyScalar(0.60));
+    bullet.life--;
 
-    item.mesh.position.add(forward.clone().multiplyScalar(item.speed));
+    createTrailParticle(bullet.mesh.position);
 
-    if (Math.abs(item.mesh.position.x) > 46 || Math.abs(item.mesh.position.z) > 46) {
-      scene.remove(item.mesh);
-      array.splice(i, 1);
+    if (
+      bullet.life <= 0 ||
+      Math.abs(bullet.mesh.position.x) > 46 ||
+      Math.abs(bullet.mesh.position.z) > 46
+    ) {
+      scene.remove(bullet.mesh);
+      bullets.splice(i, 1);
       continue;
     }
 
-    if (isEnemyBullet) {
-      if (player && distance2D(item.mesh.position, player.position) < 1.5) {
-        if (!shieldActive) {
-          playerHealth -= item.damage;
-        }
+    if (bullet.ownerId === mySocketId) {
+      for (const id in otherPlayers) {
+        const other = otherPlayers[id];
 
-        scene.remove(item.mesh);
-        array.splice(i, 1);
-      }
-    } else {
-      for (let e = enemies.length - 1; e >= 0; e--) {
-        const enemy = enemies[e];
+        if (distance2D(bullet.mesh.position, other.mesh.position) < 1.6) {
+          socket.emit("hitPlayer", {
+            targetId: id,
+            damage: bullet.damage
+          });
 
-        if (distance2D(item.mesh.position, enemy.position) < 1.5) {
-          enemy.userData.health -= item.damage;
-          scene.remove(item.mesh);
-          array.splice(i, 1);
+          createExplosion(bullet.mesh.position);
+
+          scene.remove(bullet.mesh);
+          bullets.splice(i, 1);
           break;
         }
       }
@@ -1559,116 +1581,137 @@ function updateProjectileArray(array, isEnemyBullet) {
   }
 }
 
-function updateFire() {
-  for (let i = fireParticles.length - 1; i >= 0; i--) {
-    const fire = fireParticles[i];
-    const forward = getForwardVector(fire.angle);
+function createMuzzleFlash(position, rotationY) {
+  const forward = getForwardVector(rotationY);
+  const flashPosition = position.clone().add(forward.multiplyScalar(2.5));
+  flashPosition.y = 1.2;
 
-    fire.mesh.position.add(forward.clone().multiplyScalar(fire.speed));
-    fire.life--;
-    fire.mesh.scale.multiplyScalar(0.985);
+  const flash = new THREE.Mesh(
+    new THREE.SphereGeometry(0.55, 14, 14),
+    new THREE.MeshBasicMaterial({
+      color: 0xffff33,
+      transparent: true,
+      opacity: 0.85
+    })
+  );
 
-    for (let e = enemies.length - 1; e >= 0; e--) {
-      const enemy = enemies[e];
+  flash.position.copy(flashPosition);
+  scene.add(flash);
 
-      if (distance2D(fire.mesh.position, enemy.position) < 1.7) {
-        enemy.userData.health -= fire.damage;
-        scene.remove(fire.mesh);
-        fireParticles.splice(i, 1);
-        break;
-      }
+  particles.push({
+    mesh: flash,
+    life: 12,
+    shrink: 0.88
+  });
+}
+
+function createTrailParticle(position) {
+  const trail = new THREE.Mesh(
+    new THREE.SphereGeometry(0.11, 8, 8),
+    new THREE.MeshBasicMaterial({
+      color: 0xffdd66,
+      transparent: true,
+      opacity: 0.45
+    })
+  );
+
+  trail.position.copy(position);
+  scene.add(trail);
+
+  particles.push({
+    mesh: trail,
+    life: 15,
+    shrink: 0.91
+  });
+}
+
+function createExplosion(position) {
+  for (let i = 0; i < 12; i++) {
+    const p = new THREE.Mesh(
+      new THREE.SphereGeometry(randomBetween(0.12, 0.28), 8, 8),
+      new THREE.MeshBasicMaterial({
+        color: Math.random() > 0.5 ? 0xff6600 : 0xffff00,
+        transparent: true,
+        opacity: 0.9
+      })
+    );
+
+    p.position.copy(position);
+    p.position.y = randomBetween(0.7, 1.8);
+
+    scene.add(p);
+
+    particles.push({
+      mesh: p,
+      life: 22,
+      shrink: 0.93,
+      velocity: new THREE.Vector3(
+        randomBetween(-0.18, 0.18),
+        randomBetween(0.02, 0.14),
+        randomBetween(-0.18, 0.18)
+      )
+    });
+  }
+}
+
+function updateParticles() {
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+
+    if (p.velocity) {
+      p.mesh.position.add(p.velocity);
     }
 
-    if (
-      fire.life <= 0 ||
-      Math.abs(fire.mesh.position.x) > 46 ||
-      Math.abs(fire.mesh.position.z) > 46
-    ) {
-      scene.remove(fire.mesh);
-      fireParticles.splice(i, 1);
+    p.mesh.scale.multiplyScalar(p.shrink || 0.92);
+
+    if (p.mesh.material.opacity !== undefined) {
+      p.mesh.material.opacity *= 0.92;
+    }
+
+    p.life--;
+
+    if (p.life <= 0) {
+      scene.remove(p.mesh);
+      particles.splice(i, 1);
     }
   }
 }
 
-function updateMines() {
-  for (let i = mines.length - 1; i >= 0; i--) {
-    const mine = mines[i];
+function showDamageFlash() {
+  if (!player) return;
 
-    for (let e = enemies.length - 1; e >= 0; e--) {
-      const enemy = enemies[e];
+  const flash = new THREE.Mesh(
+    new THREE.SphereGeometry(2.5, 20, 20),
+    new THREE.MeshBasicMaterial({
+      color: 0xff3333,
+      transparent: true,
+      opacity: 0.25
+    })
+  );
 
-      if (distance2D(mine.mesh.position, enemy.position) < 1.8) {
-        enemy.userData.health -= mine.damage;
-        scene.remove(mine.mesh);
-        mines.splice(i, 1);
-        break;
-      }
-    }
-  }
+  flash.position.copy(player.position);
+  flash.position.y = 1.5;
+  scene.add(flash);
+
+  particles.push({
+    mesh: flash,
+    life: 14,
+    shrink: 1.05
+  });
 }
 
-function updateShield() {
-  if (!shieldActive || !shieldMesh || !player) return;
+function updateCamera() {
+  if (!player) return;
 
-  shieldTime--;
+  const behind = new THREE.Vector3(
+    Math.sin(player.rotation.y) * 11,
+    7,
+    Math.cos(player.rotation.y) * 11
+  );
 
-  shieldMesh.position.copy(player.position);
-  shieldMesh.position.y = 1.1;
-  shieldMesh.rotation.x = Math.PI / 2;
-  shieldMesh.rotation.z = player.rotation.y;
-
-  if (shieldTime <= 0) {
-    shieldActive = false;
-    scene.remove(shieldMesh);
-    shieldMesh = null;
-  }
-}
-
-function checkDeaths() {
-  const before = enemies.length;
-
-  for (let i = enemies.length - 1; i >= 0; i--) {
-    const enemy = enemies[i];
-
-    if (enemy.userData.health <= 0) {
-      scene.remove(enemy);
-      enemies.splice(i, 1);
-    }
-  }
-
-  const killed = before - enemies.length;
-
-  if (killed > 0) {
-    gainXP(killed);
-  }
-
-  if (playerHealth <= 0 && gameState === "playing") {
-    playerHealth = 0;
-    updateUI();
-
-    setTimeout(() => {
-      returnHome("Failed! Try again.");
-    }, 600);
-  }
-
-  if (enemies.length === 0 && gameState === "playing") {
-    setTimeout(() => {
-      returnHome("You destroyed all enemies!");
-    }, 700);
-  }
-}
-
-function gainXP(amount) {
-  xp += amount;
-
-  while (xp >= xpNeeded) {
-    xp -= xpNeeded;
-    currentLevel++;
-    coins += 25;
-    parts += 5;
-    showLevelUp();
-    saveProgress();
-  }
+  const targetPosition = player.position.clone().add(behind);
+  camera.position.lerp(targetPosition, 0.13);
+  camera.lookAt(player.position.x, player.position.y + 1.45, player.position.z);
 }
 
 function showLevelUp() {
@@ -1680,36 +1723,15 @@ function showLevelUp() {
   }, 1200);
 }
 
-function returnHome(text) {
-  gameState = "home";
-  homeScreen.style.display = "block";
-  hud.style.display = "none";
-  message.textContent = text;
-  saveProgress();
-  updateUI();
-}
-
 function updateUI() {
   healthText.textContent = Math.max(0, Math.floor(playerHealth));
   levelText.textContent = currentLevel;
   xpText.textContent = xp;
   xpNeededText.textContent = xpNeeded;
-  weaponText.textContent = currentWeapon ? currentWeapon : "Empty - collect box";
-  enemyText.textContent = enemies.length;
 
   partsText.textContent = parts;
   coinsText.textContent = coins;
   gemsText.textContent = gems;
-
-  if (cameraMode === 1) cameraText.textContent = "Smash View";
-  if (cameraMode === 2) cameraText.textContent = "Top View";
-  if (cameraMode === 3) cameraText.textContent = "Close View";
-  if (cameraMode === 4) cameraText.textContent = "Arena View";
-
-  const characterName =
-    characterSelect.value.charAt(0).toUpperCase() + characterSelect.value.slice(1);
-
-  characterText.textContent = characterName;
 
   if (document.activeElement !== playerNameInput) {
     playerNameInput.value = playerDisplayName;
@@ -1720,30 +1742,12 @@ function updateUI() {
   homeLevelText.textContent = currentLevel;
   homeXpText.textContent = xp;
   homeXpNeededText.textContent = xpNeeded;
-  homeModeText.textContent = "Solo Battle";
   homeArenaText.textContent = selectedArena;
   hudArenaText.textContent = selectedArena;
-}
 
-function getNearestEnemyAngle() {
-  if (enemies.length === 0 || !player) return 0;
-
-  let nearest = enemies[0];
-  let nearestDistance = distance2D(player.position, nearest.position);
-
-  enemies.forEach(enemy => {
-    const d = distance2D(player.position, enemy.position);
-
-    if (d < nearestDistance) {
-      nearest = enemy;
-      nearestDistance = d;
-    }
-  });
-
-  const dx = nearest.position.x - player.position.x;
-  const dz = nearest.position.z - player.position.z;
-
-  return Math.atan2(-dx, -dz);
+  const onlineCount = Object.keys(otherPlayers).length + (connectedToServer ? 1 : 0);
+  onlinePlayersText.textContent = onlineCount;
+  hudOnlinePlayersText.textContent = onlineCount;
 }
 
 function getForwardVector(angle) {
@@ -1780,13 +1784,9 @@ function animate() {
   if (gameState === "playing") {
     movePlayer();
     updateCamera();
-    updateEnemies();
-    updateProjectiles();
-    updateFire();
-    updateMines();
-    updateWeaponBoxes();
-    updateShield();
-    checkDeaths();
+    updateBullets();
+    updateParticles();
+    updateOtherPlayers();
     updateUI();
   }
 
