@@ -362,6 +362,7 @@
         0 0 30px #00d9ff;
       display: none;
       z-index: 9;
+      text-align: center;
     }
 
     #crosshair {
@@ -418,10 +419,10 @@
 
     <div class="glassPanel newsBox">
       <h3>News</h3>
-      <div class="newsItem">🌎 Online players enabled</div>
-      <div class="newsItem">🤖 Bots appear if alone</div>
-      <div class="newsItem">🔥 Press SPACE to shoot</div>
-      <div class="newsItem">💥 Health bars added</div>
+      <div class="newsItem">🤖 Bots fight each other</div>
+      <div class="newsItem">🎁 Weapon boxes added</div>
+      <div class="newsItem">🔥 More weapons added</div>
+      <div class="newsItem">💀 3 deaths = home page</div>
     </div>
   </div>
 
@@ -525,12 +526,13 @@
   <b>CarDestroy.io Online</b><br>
   Player: <span id="hudPlayerName">Player</span><br>
   Health: <span id="healthText">100</span><br>
+  Deaths: <span id="deathText">0</span> / 3<br>
   Level: <span id="levelText">1</span><br>
   XP: <span id="xpText">0</span> / <span id="xpNeededText">5</span><br>
   Arena: <span id="hudArenaText">Junkyard</span><br>
   Online Players: <span id="hudOnlinePlayersText">0</span><br>
   Bots: <span id="hudBotCountText">0</span><br>
-  Weapon: Rifle<br>
+  Weapon: <span id="weaponText">Rifle</span><br>
   Move: WASD / Arrows<br>
   Shoot: SPACE
 </div>
@@ -556,6 +558,7 @@ const message = document.getElementById("message");
 const levelMessage = document.getElementById("levelMessage");
 
 const healthText = document.getElementById("healthText");
+const deathText = document.getElementById("deathText");
 const levelText = document.getElementById("levelText");
 const xpText = document.getElementById("xpText");
 const xpNeededText = document.getElementById("xpNeededText");
@@ -563,6 +566,7 @@ const hudArenaText = document.getElementById("hudArenaText");
 const hudOnlinePlayersText = document.getElementById("hudOnlinePlayersText");
 const hudBotCountText = document.getElementById("hudBotCountText");
 const hudPlayerName = document.getElementById("hudPlayerName");
+const weaponText = document.getElementById("weaponText");
 
 const homeLevelText = document.getElementById("homeLevelText");
 const homeXpText = document.getElementById("homeXpText");
@@ -602,8 +606,10 @@ let player = null;
 let otherPlayers = {};
 let bots = [];
 let bullets = [];
-let botBullets = [];
+let mines = [];
+let fireParticles = [];
 let particles = [];
+let weaponBoxes = [];
 let arenaObjects = [];
 
 let gameState = "home";
@@ -621,9 +627,18 @@ let coins = 0;
 let gems = 0;
 
 let playerHealth = 100;
+let playerDeaths = 0;
 let playerSpeed = 0.18;
 
+let currentWeapon = "Rifle";
+let shieldActive = false;
+let shieldTime = 0;
+let shieldMesh = null;
+
 let lastSendTime = 0;
+let lastShotTime = 0;
+
+const weapons = ["Rifle", "Rocket", "Mine", "Flamethrower", "Shield"];
 
 init3D();
 loadProgress();
@@ -687,7 +702,7 @@ function connectToServer() {
 
   socket.on("connect_error", () => {
     connectedToServer = false;
-    message.textContent = "Server not connected. Check SERVER_URL.";
+    message.textContent = "Server not connected. Bots still work.";
     updateUI();
   });
 
@@ -732,13 +747,20 @@ function connectToServer() {
   });
 
   socket.on("bulletCreated", bulletData => {
-    createNetworkBullet(bulletData);
+    createBullet({
+      ownerType: bulletData.ownerId === mySocketId ? "player" : "online",
+      ownerId: bulletData.ownerId,
+      x: bulletData.x,
+      z: bulletData.z,
+      rotationY: bulletData.rotationY,
+      damage: bulletData.damage || 20,
+      color: bulletData.ownerId === mySocketId ? 0xffff00 : 0xff66ff
+    });
   });
 
   socket.on("playerHealthUpdated", data => {
     if (data.id === socket.id) {
-      playerHealth = data.health;
-      showDamageFlash();
+      damagePlayer(0, true, data.health);
       updateUI();
     } else if (otherPlayers[data.id]) {
       otherPlayers[data.id].data.health = data.health;
@@ -840,6 +862,8 @@ function resetProgress() {
   coins = 0;
   gems = 0;
   playerHealth = 100;
+  playerDeaths = 0;
+  currentWeapon = "Rifle";
 
   characterSelect.value = "driver";
   carColorSelect.value = "#00bfff";
@@ -854,25 +878,7 @@ function resetProgress() {
   customPanel.style.display = "none";
   arenaMenu.style.display = "none";
 
-  gameState = "home";
-  homeScreen.style.display = "block";
-  hud.style.display = "none";
-  crosshair.style.display = "none";
-
-  if (player) {
-    scene.remove(player);
-    player = null;
-  }
-
-  removeAllBots();
-
-  message.textContent = "Progress deleted!";
-
-  setTimeout(() => {
-    if (gameState === "home") {
-      message.textContent = connectedToServer ? "Connected! Click PLAY." : "Server not connected.";
-    }
-  }, 1500);
+  returnToHome("Progress deleted!");
 
   sendPlayerUpdate();
   updateUI();
@@ -890,7 +896,7 @@ function applyCustomization() {
 
   setTimeout(() => {
     if (gameState === "home") {
-      message.textContent = connectedToServer ? "Connected! Click PLAY." : "Server not connected.";
+      message.textContent = connectedToServer ? "Connected! Click PLAY." : "Server not connected. Bots still work.";
     }
   }, 1200);
 }
@@ -949,7 +955,7 @@ function init3D() {
       e.preventDefault();
 
       if (!e.repeat) {
-        shootOnlineBullet();
+        useCurrentWeapon();
       }
     }
   });
@@ -1348,10 +1354,6 @@ function updateNameAndHealthBar(playerObject, data) {
 }
 
 function startGame() {
-  if (!connectedToServer) {
-    message.textContent = "Server not connected yet.";
-  }
-
   gameState = "playing";
   homeScreen.style.display = "none";
   hud.style.display = "block";
@@ -1359,9 +1361,7 @@ function startGame() {
   customPanel.style.display = "none";
   arenaMenu.style.display = "none";
 
-  if (player) {
-    scene.remove(player);
-  }
+  clearBattleObjects();
 
   player = createCar(
     carColorSelect.value,
@@ -1376,10 +1376,41 @@ function startGame() {
   scene.add(player);
 
   playerHealth = 100;
+  playerDeaths = 0;
+  currentWeapon = "Rifle";
+  shieldActive = false;
+  shieldTime = 0;
 
+  spawnWeaponBoxes(8);
   updateBotMode();
   sendPlayerUpdate();
   updateUI();
+}
+
+function clearBattleObjects() {
+  if (player) {
+    scene.remove(player);
+    player = null;
+  }
+
+  removeAllBots();
+
+  bullets.forEach(b => scene.remove(b.mesh));
+  bullets = [];
+
+  mines.forEach(m => scene.remove(m.mesh));
+  mines = [];
+
+  fireParticles.forEach(f => scene.remove(f.mesh));
+  fireParticles = [];
+
+  weaponBoxes.forEach(w => scene.remove(w));
+  weaponBoxes = [];
+
+  if (shieldMesh) {
+    scene.remove(shieldMesh);
+    shieldMesh = null;
+  }
 }
 
 function addOtherPlayer(data) {
@@ -1422,7 +1453,7 @@ function updateBotMode() {
   }
 
   if (realOnlineEnemies === 0 && bots.length === 0) {
-    spawnBots(5);
+    spawnBots(6);
   }
 
   if (realOnlineEnemies > 0 && bots.length > 0) {
@@ -1435,10 +1466,10 @@ function updateBotMode() {
 function spawnBots(count) {
   removeAllBots();
 
-  const botNames = ["Bot Max", "Bot Turbo", "Bot Rocket", "Bot Nitro", "Bot Spike", "Bot Drift"];
+  const botNames = ["Bot Max", "Bot Turbo", "Bot Rocket", "Bot Nitro", "Bot Spike", "Bot Drift", "Bot Fire"];
 
   for (let i = 0; i < count; i++) {
-    const colors = ["#ff3333", "#ff8c00", "#33cc33", "#9b59ff", "#ffffff"];
+    const colors = ["#ff3333", "#ff8c00", "#33cc33", "#9b59ff", "#ffffff", "#ffcc00"];
     const carColor = colors[i % colors.length];
 
     const mesh = createCar(
@@ -1458,9 +1489,10 @@ function spawnBots(count) {
       name: botNames[i % botNames.length],
       health: 100,
       speed: randomBetween(0.07, 0.11),
-      shootCooldown: randomBetween(80, 180),
+      shootCooldown: randomBetween(70, 150),
       turnTimer: randomBetween(40, 120),
-      targetAngle: mesh.rotation.y
+      targetAngle: mesh.rotation.y,
+      weapon: weapons[Math.floor(Math.random() * weapons.length)]
     });
 
     updateNameAndHealthBar({ mesh }, { health: 100 });
@@ -1473,56 +1505,123 @@ function removeAllBots() {
   });
 
   bots = [];
+}
 
-  botBullets.forEach(bullet => {
-    scene.remove(bullet.mesh);
-  });
+function createWeaponBox(x, z) {
+  const group = new THREE.Group();
 
-  botBullets = [];
+  const box = new THREE.Mesh(
+    new THREE.BoxGeometry(2, 2, 2),
+    new THREE.MeshStandardMaterial({
+      color: 0x00d9ff,
+      emissive: 0x006688,
+      roughness: 0.3
+    })
+  );
+  group.add(box);
+
+  const lid = new THREE.Mesh(
+    new THREE.BoxGeometry(2.3, 0.25, 2.3),
+    new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      emissive: 0x222222
+    })
+  );
+  lid.position.y = 1.15;
+  group.add(lid);
+
+  const label = createTextSprite("WEAPON", "rgba(0,0,0,0.75)", "white", 28);
+  label.position.set(0, 2.3, 0);
+  group.add(label);
+
+  group.position.set(x, 1.1, z);
+
+  group.userData = {
+    weapon: weapons[Math.floor(Math.random() * weapons.length)],
+    spin: randomBetween(0.02, 0.05)
+  };
+
+  scene.add(group);
+  weaponBoxes.push(group);
+}
+
+function spawnWeaponBoxes(count) {
+  weaponBoxes.forEach(w => scene.remove(w));
+  weaponBoxes = [];
+
+  for (let i = 0; i < count; i++) {
+    createWeaponBox(randomBetween(-38, 38), randomBetween(-38, 38));
+  }
+}
+
+function updateWeaponBoxes() {
+  for (let i = weaponBoxes.length - 1; i >= 0; i--) {
+    const box = weaponBoxes[i];
+
+    box.rotation.y += box.userData.spin;
+    box.position.y = 1.1 + Math.sin(performance.now() * 0.004 + box.position.x) * 0.2;
+
+    if (player && distance2D(player.position, box.position) < 2.8) {
+      currentWeapon = box.userData.weapon;
+      message.textContent = "Weapon: " + currentWeapon;
+
+      scene.remove(box);
+      weaponBoxes.splice(i, 1);
+
+      setTimeout(() => {
+        if (gameState === "playing") {
+          createWeaponBox(randomBetween(-38, 38), randomBetween(-38, 38));
+        }
+      }, 2500);
+
+      updateUI();
+    }
+  }
 }
 
 function updateBots() {
-  if (bots.length === 0 || !player) return;
+  if (bots.length === 0) return;
 
   for (let i = bots.length - 1; i >= 0; i--) {
     const bot = bots[i];
 
-    const dx = player.position.x - bot.mesh.position.x;
-    const dz = player.position.z - bot.mesh.position.z;
-    const distance = Math.sqrt(dx * dx + dz * dz);
+    const target = getBotTarget(bot);
 
-    const angleToPlayer = Math.atan2(-dx, -dz);
+    if (target) {
+      const dx = target.position.x - bot.mesh.position.x;
+      const dz = target.position.z - bot.mesh.position.z;
+      const distance = Math.sqrt(dx * dx + dz * dz);
+      const angleToTarget = Math.atan2(-dx, -dz);
 
-    bot.turnTimer--;
+      bot.turnTimer--;
 
-    if (bot.turnTimer <= 0) {
-      bot.targetAngle = angleToPlayer + randomBetween(-0.55, 0.55);
-      bot.turnTimer = randomBetween(35, 100);
-    }
+      if (bot.turnTimer <= 0) {
+        bot.targetAngle = angleToTarget + randomBetween(-0.40, 0.40);
+        bot.turnTimer = randomBetween(35, 90);
+      }
 
-    bot.mesh.rotation.y += angleDifference(bot.mesh.rotation.y, bot.targetAngle) * 0.05;
+      bot.mesh.rotation.y += angleDifference(bot.mesh.rotation.y, bot.targetAngle) * 0.055;
 
-    const forward = getForwardVector(bot.mesh.rotation.y);
+      const forward = getForwardVector(bot.mesh.rotation.y);
 
-    if (distance > 8) {
-      bot.mesh.position.add(forward.multiplyScalar(bot.speed));
-    } else if (distance < 5) {
-      bot.mesh.position.add(forward.multiplyScalar(-bot.speed * 0.7));
+      if (distance > 8) {
+        bot.mesh.position.add(forward.multiplyScalar(bot.speed));
+      } else if (distance < 4.5) {
+        bot.mesh.position.add(forward.multiplyScalar(-bot.speed * 0.7));
+      }
+
+      bot.shootCooldown--;
+
+      if (bot.shootCooldown <= 0 && distance < 35) {
+        botUseWeapon(bot);
+        bot.shootCooldown = randomBetween(75, 160);
+      }
     }
 
     bot.mesh.position.x = clamp(bot.mesh.position.x, -42, 42);
     bot.mesh.position.z = clamp(bot.mesh.position.z, -42, 42);
 
-    bot.shootCooldown--;
-
-    if (bot.shootCooldown <= 0 && distance < 35) {
-      shootBotBullet(bot);
-      bot.shootCooldown = randomBetween(80, 150);
-    }
-
-    if (bot.mesh.userData.nameSprite) bot.mesh.userData.nameSprite.lookAt(camera.position);
-    if (bot.mesh.userData.healthBack) bot.mesh.userData.healthBack.lookAt(camera.position);
-    if (bot.mesh.userData.healthBar) bot.mesh.userData.healthBar.lookAt(camera.position);
+    faceCamera(bot.mesh);
 
     if (bot.health <= 0) {
       createExplosion(bot.mesh.position);
@@ -1535,44 +1634,215 @@ function updateBots() {
   if (bots.length === 0 && Object.keys(otherPlayers).length === 0 && gameState === "playing") {
     setTimeout(() => {
       if (gameState === "playing" && Object.keys(otherPlayers).length === 0 && bots.length === 0) {
-        spawnBots(5);
+        spawnBots(6);
       }
     }, 1500);
   }
 }
 
-function shootBotBullet(bot) {
-  const dx = player.position.x - bot.mesh.position.x;
-  const dz = player.position.z - bot.mesh.position.z;
+function getBotTarget(bot) {
+  const possibleTargets = [];
+
+  if (player) {
+    possibleTargets.push({
+      type: "player",
+      position: player.position,
+      object: player
+    });
+  }
+
+  bots.forEach(otherBot => {
+    if (otherBot !== bot && otherBot.health > 0) {
+      possibleTargets.push({
+        type: "bot",
+        position: otherBot.mesh.position,
+        object: otherBot
+      });
+    }
+  });
+
+  if (possibleTargets.length === 0) return null;
+
+  let nearest = possibleTargets[0];
+  let nearestDistance = distance2D(bot.mesh.position, nearest.position);
+
+  possibleTargets.forEach(target => {
+    const d = distance2D(bot.mesh.position, target.position);
+
+    if (d < nearestDistance) {
+      nearest = target;
+      nearestDistance = d;
+    }
+  });
+
+  return nearest;
+}
+
+function botUseWeapon(bot) {
+  const target = getBotTarget(bot);
+  if (!target) return;
+
+  const dx = target.position.x - bot.mesh.position.x;
+  const dz = target.position.z - bot.mesh.position.z;
   const angle = Math.atan2(-dx, -dz);
 
+  const weapon = bot.weapon;
+
+  if (weapon === "Rifle") {
+    createBullet({
+      ownerType: "bot",
+      ownerBot: bot,
+      x: bot.mesh.position.x,
+      z: bot.mesh.position.z,
+      rotationY: angle,
+      damage: 16,
+      color: 0xff66ff
+    });
+  }
+
+  if (weapon === "Rocket") {
+    createBullet({
+      ownerType: "bot",
+      ownerBot: bot,
+      x: bot.mesh.position.x,
+      z: bot.mesh.position.z,
+      rotationY: angle,
+      damage: 35,
+      speed: 0.42,
+      size: 0.45,
+      color: 0xff3300
+    });
+  }
+
+  if (weapon === "Flamethrower") {
+    for (let i = 0; i < 8; i++) {
+      createFireParticle({
+        ownerType: "bot",
+        ownerBot: bot,
+        x: bot.mesh.position.x,
+        z: bot.mesh.position.z,
+        rotationY: angle + randomBetween(-0.35, 0.35),
+        damage: 7
+      });
+    }
+  }
+
+  if (weapon === "Mine") {
+    dropMine(bot.mesh.position, bot.mesh.rotation.y, "bot", bot);
+  }
+
+  if (weapon === "Shield") {
+    bot.health = Math.min(100, bot.health + 20);
+    updateNameAndHealthBar({ mesh: bot.mesh }, { health: bot.health });
+  }
+
+  if (Math.random() < 0.30) {
+    bot.weapon = weapons[Math.floor(Math.random() * weapons.length)];
+  }
+}
+
+function useCurrentWeapon() {
+  if (!player) return;
+
+  const now = performance.now();
+
+  if (now - lastShotTime < 300) return;
+  lastShotTime = now;
+
+  if (currentWeapon === "Rifle") {
+    for (let i = -1; i <= 1; i++) {
+      shootPlayerBullet(player.rotation.y + i * 0.04, 20, 0.60, 0.26, 0xffff00);
+    }
+  }
+
+  if (currentWeapon === "Rocket") {
+    for (let i = -1.5; i <= 1.5; i++) {
+      shootPlayerBullet(player.rotation.y + i * 0.12, 40, 0.45, 0.42, 0xff3300);
+    }
+    currentWeapon = "Rifle";
+  }
+
+  if (currentWeapon === "Mine") {
+    for (let i = 0; i < 4; i++) {
+      dropMine(player.position, player.rotation.y, "player", null, i);
+    }
+    currentWeapon = "Rifle";
+  }
+
+  if (currentWeapon === "Flamethrower") {
+    for (let i = 0; i < 18; i++) {
+      createFireParticle({
+        ownerType: "player",
+        x: player.position.x,
+        z: player.position.z,
+        rotationY: player.rotation.y + randomBetween(-0.35, 0.35),
+        damage: 9
+      });
+    }
+  }
+
+  if (currentWeapon === "Shield") {
+    activateShield();
+    currentWeapon = "Rifle";
+  }
+
+  createMuzzleFlash(player.position, player.rotation.y);
+  updateUI();
+}
+
+function shootPlayerBullet(angle, damage, speed, size, color) {
+  if (socket && connectedToServer) {
+    socket.emit("shootBullet", {
+      x: player.position.x,
+      z: player.position.z,
+      rotationY: angle,
+      damage
+    });
+  }
+
+  createBullet({
+    ownerType: "player",
+    x: player.position.x,
+    z: player.position.z,
+    rotationY: angle,
+    damage,
+    speed,
+    size,
+    color
+  });
+}
+
+function createBullet(data) {
   const mesh = new THREE.Mesh(
-    new THREE.SphereGeometry(0.24, 14, 14),
+    new THREE.SphereGeometry(data.size || 0.26, 16, 16),
     new THREE.MeshStandardMaterial({
-      color: 0xff66ff,
-      emissive: 0xaa00aa,
+      color: data.color || 0xffff00,
+      emissive: data.color || 0xffff00,
       roughness: 0.2
     })
   );
 
-  mesh.position.copy(bot.mesh.position);
-  mesh.position.y = 1.1;
+  mesh.position.set(data.x, 1.1, data.z);
   scene.add(mesh);
 
-  botBullets.push({
+  bullets.push({
+    ownerType: data.ownerType,
+    ownerId: data.ownerId || null,
+    ownerBot: data.ownerBot || null,
     mesh,
-    rotationY: angle,
-    damage: 10,
+    rotationY: data.rotationY,
+    damage: data.damage || 20,
+    speed: data.speed || 0.60,
     life: 120
   });
 }
 
-function updateBotBullets() {
-  for (let i = botBullets.length - 1; i >= 0; i--) {
-    const bullet = botBullets[i];
+function updateBullets() {
+  for (let i = bullets.length - 1; i >= 0; i--) {
+    const bullet = bullets[i];
     const forward = getForwardVector(bullet.rotationY);
 
-    bullet.mesh.position.add(forward.multiplyScalar(0.42));
+    bullet.mesh.position.add(forward.multiplyScalar(bullet.speed));
     bullet.life--;
 
     createTrailParticle(bullet.mesh.position);
@@ -1583,26 +1853,278 @@ function updateBotBullets() {
       Math.abs(bullet.mesh.position.z) > 46
     ) {
       scene.remove(bullet.mesh);
-      botBullets.splice(i, 1);
+      bullets.splice(i, 1);
       continue;
     }
 
-    if (player && distance2D(bullet.mesh.position, player.position) < 1.6) {
-      playerHealth -= bullet.damage;
-      showDamageFlash();
-
+    if (handleBulletHits(bullet)) {
       scene.remove(bullet.mesh);
-      botBullets.splice(i, 1);
-
-      if (playerHealth <= 0) {
-        playerHealth = 100;
-        player.position.set(randomBetween(-10, 10), 0, randomBetween(-10, 10));
-        message.textContent = "Destroyed by bot! Respawned.";
-      }
-
-      updateUI();
+      bullets.splice(i, 1);
     }
   }
+}
+
+function handleBulletHits(bullet) {
+  if (bullet.ownerType !== "player" && player && distance2D(bullet.mesh.position, player.position) < 1.6) {
+    damagePlayer(bullet.damage);
+    createExplosion(bullet.mesh.position);
+    return true;
+  }
+
+  if (bullet.ownerType === "player") {
+    for (const id in otherPlayers) {
+      const other = otherPlayers[id];
+
+      if (distance2D(bullet.mesh.position, other.mesh.position) < 1.6) {
+        if (socket && connectedToServer) {
+          socket.emit("hitPlayer", {
+            targetId: id,
+            damage: bullet.damage
+          });
+        }
+
+        createExplosion(bullet.mesh.position);
+        return true;
+      }
+    }
+  }
+
+  for (let b = bots.length - 1; b >= 0; b--) {
+    const bot = bots[b];
+
+    if (bullet.ownerType === "bot" && bullet.ownerBot === bot) continue;
+
+    if (distance2D(bullet.mesh.position, bot.mesh.position) < 1.6) {
+      bot.health -= bullet.damage;
+      updateNameAndHealthBar({ mesh: bot.mesh }, { health: bot.health });
+      createExplosion(bullet.mesh.position);
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function dropMine(position, rotationY, ownerType, ownerBot = null, index = 0) {
+  const mine = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.65, 0.65, 0.25, 20),
+    new THREE.MeshStandardMaterial({
+      color: ownerType === "player" ? 0x111111 : 0x660066,
+      emissive: ownerType === "player" ? 0x330000 : 0x440044
+    })
+  );
+
+  const back = new THREE.Vector3(
+    Math.sin(rotationY),
+    0,
+    Math.cos(rotationY)
+  );
+
+  mine.position.copy(position);
+  mine.position.add(back.multiplyScalar(2.8 + index * 1.3));
+  mine.position.y = 0.2;
+  scene.add(mine);
+
+  mines.push({
+    mesh: mine,
+    ownerType,
+    ownerBot,
+    damage: 45,
+    armTime: 25,
+    life: 600
+  });
+}
+
+function updateMines() {
+  for (let i = mines.length - 1; i >= 0; i--) {
+    const mine = mines[i];
+
+    mine.armTime--;
+    mine.life--;
+
+    if (mine.life <= 0) {
+      scene.remove(mine.mesh);
+      mines.splice(i, 1);
+      continue;
+    }
+
+    if (mine.armTime > 0) continue;
+
+    if (mine.ownerType !== "player" && player && distance2D(mine.mesh.position, player.position) < 1.8) {
+      damagePlayer(mine.damage);
+      createExplosion(mine.mesh.position);
+      scene.remove(mine.mesh);
+      mines.splice(i, 1);
+      continue;
+    }
+
+    for (let b = bots.length - 1; b >= 0; b--) {
+      const bot = bots[b];
+
+      if (mine.ownerType === "bot" && mine.ownerBot === bot) continue;
+
+      if (distance2D(mine.mesh.position, bot.mesh.position) < 1.8) {
+        bot.health -= mine.damage;
+        updateNameAndHealthBar({ mesh: bot.mesh }, { health: bot.health });
+        createExplosion(mine.mesh.position);
+        scene.remove(mine.mesh);
+        mines.splice(i, 1);
+        break;
+      }
+    }
+  }
+}
+
+function createFireParticle(data) {
+  const fire = new THREE.Mesh(
+    new THREE.SphereGeometry(0.32 + Math.random() * 0.22, 12, 12),
+    new THREE.MeshStandardMaterial({
+      color: 0xff6600,
+      emissive: 0xff2200,
+      transparent: true,
+      opacity: 0.85
+    })
+  );
+
+  fire.position.set(data.x, 1.1, data.z);
+  scene.add(fire);
+
+  fireParticles.push({
+    mesh: fire,
+    ownerType: data.ownerType,
+    ownerBot: data.ownerBot || null,
+    rotationY: data.rotationY,
+    damage: data.damage || 8,
+    speed: 0.34 + Math.random() * 0.17,
+    life: 45
+  });
+}
+
+function updateFireParticles() {
+  for (let i = fireParticles.length - 1; i >= 0; i--) {
+    const fire = fireParticles[i];
+    const forward = getForwardVector(fire.rotationY);
+
+    fire.mesh.position.add(forward.multiplyScalar(fire.speed));
+    fire.mesh.scale.multiplyScalar(0.985);
+    fire.life--;
+
+    if (fire.ownerType !== "player" && player && distance2D(fire.mesh.position, player.position) < 1.7) {
+      damagePlayer(fire.damage);
+      scene.remove(fire.mesh);
+      fireParticles.splice(i, 1);
+      continue;
+    }
+
+    for (let b = bots.length - 1; b >= 0; b--) {
+      const bot = bots[b];
+
+      if (fire.ownerType === "bot" && fire.ownerBot === bot) continue;
+
+      if (distance2D(fire.mesh.position, bot.mesh.position) < 1.7) {
+        bot.health -= fire.damage;
+        updateNameAndHealthBar({ mesh: bot.mesh }, { health: bot.health });
+        scene.remove(fire.mesh);
+        fireParticles.splice(i, 1);
+        break;
+      }
+    }
+
+    if (
+      fire.life <= 0 ||
+      Math.abs(fire.mesh.position.x) > 46 ||
+      Math.abs(fire.mesh.position.z) > 46
+    ) {
+      scene.remove(fire.mesh);
+      fireParticles.splice(i, 1);
+    }
+  }
+}
+
+function activateShield() {
+  shieldActive = true;
+  shieldTime = 360;
+
+  if (shieldMesh) scene.remove(shieldMesh);
+
+  const geometry = new THREE.TorusGeometry(2.2, 0.08, 12, 36, Math.PI);
+  const material = new THREE.MeshStandardMaterial({
+    color: 0x78e6ff,
+    emissive: 0x0088aa,
+    transparent: true,
+    opacity: 0.80
+  });
+
+  shieldMesh = new THREE.Mesh(geometry, material);
+  scene.add(shieldMesh);
+
+  message.textContent = "Shield activated!";
+}
+
+function updateShield() {
+  if (!shieldActive || !shieldMesh || !player) return;
+
+  shieldTime--;
+
+  shieldMesh.position.copy(player.position);
+  shieldMesh.position.y = 1.25;
+  shieldMesh.rotation.x = Math.PI / 2;
+  shieldMesh.rotation.z = player.rotation.y;
+
+  if (shieldTime <= 0) {
+    shieldActive = false;
+    scene.remove(shieldMesh);
+    shieldMesh = null;
+  }
+}
+
+function damagePlayer(amount, serverSet = false, serverHealth = 100) {
+  if (!player) return;
+
+  if (shieldActive && amount > 0) {
+    showShieldHit();
+    return;
+  }
+
+  if (serverSet) {
+    playerHealth = serverHealth;
+  } else {
+    playerHealth -= amount;
+  }
+
+  showDamageFlash();
+
+  if (playerHealth <= 0) {
+    playerDeaths++;
+
+    if (playerDeaths >= 3) {
+      returnToHome("You died 3 times. Back to home page.");
+      return;
+    }
+
+    playerHealth = 100;
+    player.position.set(randomBetween(-10, 10), 0, randomBetween(-10, 10));
+    message.textContent = "You died! Respawn " + playerDeaths + " / 3";
+  }
+
+  updateUI();
+}
+
+function returnToHome(text) {
+  gameState = "home";
+  homeScreen.style.display = "block";
+  hud.style.display = "none";
+  crosshair.style.display = "none";
+  message.textContent = text;
+
+  clearBattleObjects();
+
+  playerHealth = 100;
+  playerDeaths = 0;
+  currentWeapon = "Rifle";
+
+  saveProgress();
+  updateUI();
 }
 
 function gainLocalXP(amount) {
@@ -1676,135 +2198,20 @@ function updateOtherPlayers() {
 
     other.mesh.position.x += (other.data.x - other.mesh.position.x) * 0.20;
     other.mesh.position.z += (other.data.z - other.mesh.position.z) * 0.20;
-    other.mesh.rotation.y += (other.data.rotationY - other.mesh.rotation.y) * 0.20;
+    other.mesh.rotation.y += angleDifference(other.mesh.rotation.y, other.data.rotationY) * 0.20;
 
-    if (other.mesh.userData.nameSprite) {
-      other.mesh.userData.nameSprite.lookAt(camera.position);
-    }
-
-    if (other.mesh.userData.healthBack) {
-      other.mesh.userData.healthBack.lookAt(camera.position);
-    }
-
-    if (other.mesh.userData.healthBar) {
-      other.mesh.userData.healthBar.lookAt(camera.position);
-    }
+    faceCamera(other.mesh);
   }
 
   if (player) {
-    if (player.userData.nameSprite) player.userData.nameSprite.lookAt(camera.position);
-    if (player.userData.healthBack) player.userData.healthBack.lookAt(camera.position);
-    if (player.userData.healthBar) player.userData.healthBar.lookAt(camera.position);
+    faceCamera(player);
   }
 }
 
-function shootOnlineBullet() {
-  if (!player) return;
-
-  if (socket && connectedToServer) {
-    socket.emit("shootBullet", {
-      x: player.position.x,
-      z: player.position.z,
-      rotationY: player.rotation.y,
-      damage: 20
-    });
-  } else {
-    createNetworkBullet({
-      id: "local-" + Date.now(),
-      ownerId: mySocketId || "local",
-      x: player.position.x,
-      z: player.position.z,
-      rotationY: player.rotation.y,
-      damage: 20
-    });
-  }
-
-  createMuzzleFlash(player.position, player.rotation.y);
-}
-
-function createNetworkBullet(data) {
-  const mine = data.ownerId === mySocketId || data.ownerId === "local";
-
-  const mesh = new THREE.Mesh(
-    new THREE.SphereGeometry(0.26, 16, 16),
-    new THREE.MeshStandardMaterial({
-      color: mine ? 0xffff00 : 0xff66ff,
-      emissive: mine ? 0xffaa00 : 0xaa00aa,
-      roughness: 0.2
-    })
-  );
-
-  mesh.position.set(data.x, 1.1, data.z);
-  scene.add(mesh);
-
-  bullets.push({
-    id: data.id,
-    ownerId: data.ownerId,
-    mesh,
-    rotationY: data.rotationY,
-    damage: data.damage,
-    life: 120
-  });
-}
-
-function updateBullets() {
-  for (let i = bullets.length - 1; i >= 0; i--) {
-    const bullet = bullets[i];
-    const forward = getForwardVector(bullet.rotationY);
-
-    bullet.mesh.position.add(forward.multiplyScalar(0.60));
-    bullet.life--;
-
-    createTrailParticle(bullet.mesh.position);
-
-    if (
-      bullet.life <= 0 ||
-      Math.abs(bullet.mesh.position.x) > 46 ||
-      Math.abs(bullet.mesh.position.z) > 46
-    ) {
-      scene.remove(bullet.mesh);
-      bullets.splice(i, 1);
-      continue;
-    }
-
-    const isMyBullet = bullet.ownerId === mySocketId || bullet.ownerId === "local";
-
-    if (isMyBullet) {
-      for (const id in otherPlayers) {
-        const other = otherPlayers[id];
-
-        if (distance2D(bullet.mesh.position, other.mesh.position) < 1.6) {
-          if (socket && connectedToServer) {
-            socket.emit("hitPlayer", {
-              targetId: id,
-              damage: bullet.damage
-            });
-          }
-
-          createExplosion(bullet.mesh.position);
-
-          scene.remove(bullet.mesh);
-          bullets.splice(i, 1);
-          break;
-        }
-      }
-
-      for (let b = bots.length - 1; b >= 0; b--) {
-        const bot = bots[b];
-
-        if (distance2D(bullet.mesh.position, bot.mesh.position) < 1.6) {
-          bot.health -= bullet.damage;
-          updateNameAndHealthBar({ mesh: bot.mesh }, { health: bot.health });
-
-          createExplosion(bullet.mesh.position);
-
-          scene.remove(bullet.mesh);
-          bullets.splice(i, 1);
-          break;
-        }
-      }
-    }
-  }
+function faceCamera(mesh) {
+  if (mesh.userData.nameSprite) mesh.userData.nameSprite.lookAt(camera.position);
+  if (mesh.userData.healthBack) mesh.userData.healthBack.lookAt(camera.position);
+  if (mesh.userData.healthBar) mesh.userData.healthBar.lookAt(camera.position);
 }
 
 function createMuzzleFlash(position, rotationY) {
@@ -1926,6 +2333,29 @@ function showDamageFlash() {
   });
 }
 
+function showShieldHit() {
+  if (!player) return;
+
+  const flash = new THREE.Mesh(
+    new THREE.SphereGeometry(2.8, 20, 20),
+    new THREE.MeshBasicMaterial({
+      color: 0x78e6ff,
+      transparent: true,
+      opacity: 0.25
+    })
+  );
+
+  flash.position.copy(player.position);
+  flash.position.y = 1.5;
+  scene.add(flash);
+
+  particles.push({
+    mesh: flash,
+    life: 12,
+    shrink: 1.03
+  });
+}
+
 function updateCamera() {
   if (!player) return;
 
@@ -1951,9 +2381,11 @@ function showLevelUp() {
 
 function updateUI() {
   healthText.textContent = Math.max(0, Math.floor(playerHealth));
+  deathText.textContent = playerDeaths;
   levelText.textContent = currentLevel;
   xpText.textContent = xp;
   xpNeededText.textContent = xpNeeded;
+  weaponText.textContent = currentWeapon;
 
   partsText.textContent = parts;
   coinsText.textContent = coins;
@@ -2023,10 +2455,13 @@ function animate() {
     movePlayer();
     updateCamera();
     updateBullets();
-    updateBotBullets();
+    updateMines();
+    updateFireParticles();
     updateParticles();
     updateOtherPlayers();
     updateBots();
+    updateWeaponBoxes();
+    updateShield();
     updateUI();
   }
 
