@@ -292,17 +292,17 @@
       text-shadow: 0 1px 0 rgba(0,0,0,0.25);
     }
 
-    #customPanel select {
-      width: 100%;
-      padding: 11px;
-      border-radius: 10px;
-      border: none;
-      margin-top: 5px;
-      box-sizing: border-box;
-      font-size: 16px;
-      font-weight: 700;
-    }
-
+#customPanel select,
+#customPanel input {
+  width: 100%;
+  padding: 11px;
+  border-radius: 10px;
+  border: none;
+  margin-top: 5px;
+  box-sizing: border-box;
+  font-size: 16px;
+  font-weight: 700;
+}
     #bottomBar {
       position: absolute;
       right: 26px;
@@ -459,7 +459,7 @@
     <div id="message">Connecting to server...</div>
   </div>
 
-  <div id="customPanel">
+    <div id="customPanel">
     <h3>Customize</h3>
 
     <label>Character</label>
@@ -510,12 +510,31 @@
       <option value="#3a2412">Desert Orange</option>
     </select>
 
+    <label>Custom Words - Level 210</label>
+    <input id="customWordsInput" maxlength="18" placeholder="Reach Level 210 to unlock">
+
+    <label>Name Font Color</label>
+    <select id="nameColorSelect">
+      <option value="#ffffff">White - Free</option>
+      <option value="gold">Shiny Gold - Level 210</option>
+      <option value="#00ff33">Green - 50 Gems</option>
+    </select>
+
+    <button class="orangeBtn" id="buyGreenFontBtn">Buy Green Font - 50 Gems</button>
+
+    <div id="fontColorMessage" style="
+      margin-top: 8px;
+      font-weight: 900;
+      color: #fff176;
+      text-shadow: 1px 1px 0 #000;
+      min-height: 20px;
+    "></div>
+
     <button class="orangeBtn" id="applyCustomizeBtn">Save Customization</button>
     <button class="blueBtn" id="closeCustomizeBtn">Close</button>
   </div>
 
-  <div id="bottomBar">
-    <button class="bottomIcon">🌎</button>
+  <div id="bottomBar">    <button class="bottomIcon">🌎</button>
     <button class="bottomIcon">⚙️</button>
     <button class="bottomIcon">🎮</button>
     <button class="bottomIcon">💬</button>
@@ -595,7 +614,11 @@ const carColorSelect = document.getElementById("carColorSelect");
 const wheelColorSelect = document.getElementById("wheelColorSelect");
 const hatColorSelect = document.getElementById("hatColorSelect");
 const backgroundColorSelect = document.getElementById("backgroundColorSelect");
-
+const customWordsInput = document.getElementById("customWordsInput");
+const nameColorSelect = document.getElementById("nameColorSelect");
+const buyGreenFontBtn = document.getElementById("buyGreenFontBtn");
+const fontColorMessage = document.getElementById("fontColorMessage");
+  
 let socket = null;
 let mySocketId = null;
 let connectedToServer = false;
@@ -621,6 +644,10 @@ let xpNeeded = 5;
 
 let playerDisplayName = "Player";
 let selectedArena = "Junkyard";
+
+let customWords = "";
+let nameColor = "#ffffff";
+let greenFontUnlocked = false;
 
 let parts = 0;
 let coins = 0;
@@ -692,7 +719,60 @@ closeCustomizeBtn.addEventListener("click", () => {
 });
 
 applyCustomizeBtn.addEventListener("click", applyCustomization);
+customWordsInput.addEventListener("input", () => {
+  if (currentLevel < 210) {
+    customWordsInput.value = "";
+    message.textContent = "Reach Level 210 to unlock custom words.";
+    return;
+  }
 
+  customWords = customWordsInput.value.trim();
+  saveProgress();
+  sendPlayerUpdate();
+  updateUI();
+});
+
+buyGreenFontBtn.addEventListener("click", () => {
+  if (greenFontUnlocked) {
+    fontColorMessage.textContent = "Green font already unlocked.";
+    return;
+  }
+
+  if (gems < 50) {
+    fontColorMessage.textContent = "Not enough gems. You need 50 gems.";
+    return;
+  }
+
+  gems -= 50;
+  greenFontUnlocked = true;
+  nameColor = "#00ff33";
+  nameColorSelect.value = "#00ff33";
+
+  fontColorMessage.textContent = "Green font unlocked!";
+  saveProgress();
+  sendPlayerUpdate();
+  updateUI();
+});
+
+nameColorSelect.addEventListener("change", () => {
+  if (nameColorSelect.value === "gold" && currentLevel < 210) {
+    nameColorSelect.value = nameColor;
+    fontColorMessage.textContent = "Shiny Gold unlocks at Level 210.";
+    return;
+  }
+
+  if (nameColorSelect.value === "#00ff33" && !greenFontUnlocked) {
+    nameColorSelect.value = nameColor;
+    fontColorMessage.textContent = "Buy green font for 50 gems first.";
+    return;
+  }
+
+  nameColor = nameColorSelect.value;
+  fontColorMessage.textContent = "Font color changed!";
+  saveProgress();
+  sendPlayerUpdate();
+  updateUI();
+});
 function connectToServer() {
   socket = io(SERVER_URL);
 
@@ -814,12 +894,18 @@ function saveProgress() {
     parts,
     coins,
     gems,
+    customWords,
+    nameColor,
+    greenFontUnlocked,
     character: characterSelect.value,
     carColor: carColorSelect.value,
     wheelColor: wheelColorSelect.value,
     hatColor: hatColorSelect.value,
     backgroundColor: backgroundColorSelect.value
   };
+
+  localStorage.setItem("carDestroySaveData", JSON.stringify(saveData));
+}
 
   localStorage.setItem("carDestroySaveData", JSON.stringify(saveData));
 }
@@ -840,13 +926,18 @@ function loadProgress() {
     parts = saveData.parts || 0;
     coins = saveData.coins || 0;
     gems = saveData.gems || 0;
-
+customWords = saveData.customWords || "";
+nameColor = saveData.nameColor || "#ffffff";
+greenFontUnlocked = saveData.greenFontUnlocked || false;
+    
     characterSelect.value = saveData.character || "driver";
     carColorSelect.value = saveData.carColor || "#00bfff";
     wheelColorSelect.value = saveData.wheelColor || "#050505";
     hatColorSelect.value = saveData.hatColor || "#ff3333";
     backgroundColorSelect.value = saveData.backgroundColor || "#141820";
-
+customWordsInput.value = customWords;
+nameColorSelect.value = nameColor;
+    
     playerNameInput.value = playerDisplayName;
   } catch (error) {
     localStorage.removeItem("carDestroySaveData");
@@ -867,14 +958,19 @@ function resetProgress() {
   playerHealth = 100;
   playerDeaths = 0;
   currentWeapon = "Rifle";
-
+customWords = "";
+nameColor = "#ffffff";
+greenFontUnlocked = false;
+  
   characterSelect.value = "driver";
   carColorSelect.value = "#00bfff";
   wheelColorSelect.value = "#050505";
   hatColorSelect.value = "#ff3333";
   backgroundColorSelect.value = "#141820";
   playerNameInput.value = "Player";
-
+customWordsInput.value = "";
+nameColorSelect.value = "#ffffff";
+  
   scene.background = new THREE.Color(backgroundColorSelect.value);
   createSelectedArena();
 
