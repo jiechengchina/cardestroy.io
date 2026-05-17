@@ -414,7 +414,7 @@
     <div class="glassPanel">
       <input class="playerName" id="playerNameInput" value="Player" maxlength="16">
       <button class="orangeBtn" id="openCustomizeBtn">Customize</button>
-      <button class="redBtn" onclick="resetProgress()">Reset Save</button>
+      <button class="redBtn" onclick="showDeleteConfirm()">Delete Progress</button>
     </div>
 
     <div class="glassPanel newsBox">
@@ -649,6 +649,9 @@ animate();
 
 window.startGame = startGame;
 window.resetProgress = resetProgress;
+window.showDeleteConfirm = showDeleteConfirm;
+window.closeDeleteConfirm = closeDeleteConfirm;
+window.confirmDeleteProgress = confirmDeleteProgress;
 
 playerNameInput.addEventListener("input", () => {
   const newName = playerNameInput.value.trim();
@@ -2378,7 +2381,72 @@ function showLevelUp() {
     levelMessage.style.display = "none";
   }, 1200);
 }
+function showDeleteConfirm() {
+  const oldBox = document.getElementById("deleteConfirmBox");
+  if (oldBox) oldBox.remove();
 
+  const box = document.createElement("div");
+  box.id = "deleteConfirmBox";
+
+  box.innerHTML = `
+    <div style="
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.92);
+      color: white;
+      padding: 30px;
+      border-radius: 20px;
+      border: 4px solid white;
+      z-index: 99999;
+      text-align: center;
+      font-family: Arial, sans-serif;
+      box-shadow: 0 0 25px rgba(0,0,0,0.6);
+    ">
+      <h2 style="margin:0 0 22px; font-size:28px;">
+        Are you sure you want to delete progress?
+      </h2>
+
+      <button onclick="confirmDeleteProgress()" style="
+        background:#22c55e;
+        color:white;
+        border:none;
+        padding:15px 38px;
+        border-radius:12px;
+        font-size:22px;
+        font-weight:bold;
+        margin-right:15px;
+        cursor:pointer;
+        box-shadow:0 5px 0 rgba(0,0,0,0.35);
+      ">Yes</button>
+
+      <button onclick="closeDeleteConfirm()" style="
+        background:#ef4444;
+        color:white;
+        border:none;
+        padding:15px 38px;
+        border-radius:12px;
+        font-size:22px;
+        font-weight:bold;
+        cursor:pointer;
+        box-shadow:0 5px 0 rgba(0,0,0,0.35);
+      ">No</button>
+    </div>
+  `;
+
+  document.body.appendChild(box);
+}
+
+function closeDeleteConfirm() {
+  const box = document.getElementById("deleteConfirmBox");
+  if (box) box.remove();
+}
+
+function confirmDeleteProgress() {
+  closeDeleteConfirm();
+  resetProgress();
+}
 function updateUI() {
   healthText.textContent = Math.max(0, Math.floor(playerHealth));
   deathText.textContent = playerDeaths;
