@@ -906,10 +906,7 @@ function saveProgress() {
 
   localStorage.setItem("carDestroySaveData", JSON.stringify(saveData));
 }
-
-  localStorage.setItem("carDestroySaveData", JSON.stringify(saveData));
-}
-
+  
 function loadProgress() {
   const saved = localStorage.getItem("carDestroySaveData");
 
@@ -1248,7 +1245,7 @@ function createParkingGarageArena() {
   }
 }
 
-function createCar(carColor, wheelColor, hatColor, characterType, nameText = "Player") {
+function createCar(carColor, wheelColor, hatColor, characterType, nameText = "Player", nameTextColor = "#ffffff") {
   const group = new THREE.Group();
 
   const baseColor = new THREE.Color(carColor);
@@ -1326,7 +1323,7 @@ function createCar(carColor, wheelColor, hatColor, characterType, nameText = "Pl
 
   addCharacter(group, characterType, hatColor);
 
-  const nameSprite = createTextSprite(nameText, "rgba(0,0,0,0.60)", "white", 34);
+  const nameSprite = createTextSprite(nameText, "rgba(0,0,0,0.60)", nameTextColor, 34);
   nameSprite.position.set(0, 4.0, 0);
   group.add(nameSprite);
 
@@ -1407,11 +1404,44 @@ function createTextSprite(text, background = "rgba(0,0,0,0.65)", color = "white"
   ctx.clearRect(0, 0, canvas2.width, canvas2.height);
 
   roundRect(ctx, 12, 24, 488, 78, 20, background);
-  ctx.fillStyle = color;
+
   ctx.font = "bold " + fontSize + "px Arial";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText(text, 256, 64);
+
+  if (color === "gold") {
+    const gradient = ctx.createLinearGradient(0, 20, 0, 100);
+    gradient.addColorStop(0, "#fff8c6");
+    gradient.addColorStop(0.20, "#fff06a");
+    gradient.addColorStop(0.45, "#ffd700");
+    gradient.addColorStop(0.70, "#ffb300");
+    gradient.addColorStop(1, "#b87900");
+
+    ctx.shadowColor = "rgba(255, 215, 0, 0.95)";
+    ctx.shadowBlur = 16;
+
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = "#6d4700";
+    ctx.strokeText(text, 256, 64);
+
+    ctx.fillStyle = gradient;
+    ctx.fillText(text, 256, 64);
+
+    ctx.shadowBlur = 0;
+
+    ctx.strokeStyle = "rgba(255,255,255,0.9)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(165, 45);
+    ctx.lineTo(350, 37);
+    ctx.stroke();
+  } else {
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 7;
+    ctx.fillStyle = color;
+    ctx.fillText(text, 256, 64);
+    ctx.shadowBlur = 0;
+  }
 
   const texture = new THREE.CanvasTexture(canvas2);
   const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
@@ -1420,7 +1450,6 @@ function createTextSprite(text, background = "rgba(0,0,0,0.65)", color = "white"
 
   return sprite;
 }
-
 function roundRect(ctx, x, y, w, h, r, fill) {
   ctx.fillStyle = fill;
   ctx.beginPath();
@@ -1463,12 +1492,13 @@ function startGame() {
   clearBattleObjects();
 
   player = createCar(
-    carColorSelect.value,
-    wheelColorSelect.value,
-    hatColorSelect.value,
-    characterSelect.value,
-    playerDisplayName
-  );
+  carColorSelect.value,
+  wheelColorSelect.value,
+  hatColorSelect.value,
+  characterSelect.value,
+  currentLevel >= 210 && customWords ? customWords : playerDisplayName,
+  nameColor
+);
 
   player.position.set(randomBetween(-10, 10), 0, randomBetween(-10, 10));
   player.rotation.y = 0;
@@ -1516,12 +1546,13 @@ function addOtherPlayer(data) {
   if (otherPlayers[data.id]) return;
 
   const mesh = createCar(
-    data.carColor || "#ff8c00",
-    data.wheelColor || "#050505",
-    data.hatColor || "#222222",
-    data.character || "robot",
-    data.name || "Player"
-  );
+  data.carColor || "#ff8c00",
+  data.wheelColor || "#050505",
+  data.hatColor || "#222222",
+  data.character || "robot",
+  data.customWords || data.name || "Player",
+  data.nameColor || "#ffffff"
+);
 
   mesh.position.set(data.x || 0, 0, data.z || 0);
   mesh.rotation.y = data.rotationY || 0;
@@ -2287,7 +2318,9 @@ function sendPlayerUpdate() {
     carColor: carColorSelect.value,
     wheelColor: wheelColorSelect.value,
     hatColor: hatColorSelect.value,
-    character: characterSelect.value
+    character: characterSelect.value,
+customWords: currentLevel >= 210 ? customWords : "",
+nameColor: nameColor
   });
 }
 
@@ -2557,7 +2590,23 @@ function updateUI() {
 
   if (document.activeElement !== playerNameInput) {
     playerNameInput.value = playerDisplayName;
-  }
+  if (customWordsInput) {
+  customWordsInput.disabled = currentLevel < 210;
+  customWordsInput.placeholder = currentLevel >= 210 ? "Type custom words" : "Reach Level 210 to unlock";
+}
+
+if (nameColorSelect) {
+  nameColorSelect.value = nameColor;
+}
+
+if (buyGreenFontBtn) {
+  buyGreenFontBtn.style.display = greenFontUnlocked ? "none" : "block";
+}
+
+if (fontColorMessage && currentLevel < 210 && nameColor === "gold") {
+  nameColor = "#ffffff";
+  nameColorSelect.value = "#ffffff";
+}
 
   hudPlayerName.textContent = playerDisplayName;
 
