@@ -2576,54 +2576,18 @@ function confirmDeleteProgress() {
   closeDeleteConfirm();
   resetProgress();
 }
+function confirmDeleteProgress() {
+  closeDeleteConfirm();
+  resetProgress();
+}
+
 function updateUI() {
-  healthText.textContent = Math.max(0, Math.floor(playerHealth));
-  deathText.textContent = playerDeaths;
-  levelText.textContent = currentLevel;
-  xpText.textContent = xp;
-  xpNeededText.textContent = xpNeeded;
-  weaponText.textContent = currentWeapon;
-
-  partsText.textContent = parts;
-  coinsText.textContent = coins;
-  gemsText.textContent = gems;
-
-  if (document.activeElement !== playerNameInput) {
-    playerNameInput.value = playerDisplayName;
-  if (customWordsInput) {
-  customWordsInput.disabled = currentLevel < 210;
-  customWordsInput.placeholder = currentLevel >= 210 ? "Type custom words" : "Reach Level 210 to unlock";
+  // new code here
 }
 
-if (nameColorSelect) {
-  nameColorSelect.value = nameColor;
+function getForwardVector(angle) {
+  // keep this old code
 }
-
-if (buyGreenFontBtn) {
-  buyGreenFontBtn.style.display = greenFontUnlocked ? "none" : "block";
-}
-
-if (fontColorMessage && currentLevel < 210 && nameColor === "gold") {
-  nameColor = "#ffffff";
-  nameColorSelect.value = "#ffffff";
-}
-
-  hudPlayerName.textContent = playerDisplayName;
-
-  homeLevelText.textContent = currentLevel;
-  homeXpText.textContent = xp;
-  homeXpNeededText.textContent = xpNeeded;
-  homeArenaText.textContent = selectedArena;
-  hudArenaText.textContent = selectedArena;
-
-  const onlineEnemies = Object.keys(otherPlayers).length;
-  onlinePlayersText.textContent = onlineEnemies;
-  hudOnlinePlayersText.textContent = onlineEnemies;
-
-  botCountText.textContent = bots.length;
-  hudBotCountText.textContent = bots.length;
-}
-
 function getForwardVector(angle) {
   return new THREE.Vector3(
     -Math.sin(angle),
